@@ -10,6 +10,7 @@ struct TextButtonDemo: View {
       LazyVStack(alignment: .leading, spacing: theme.spacing.xLarge) {
         header
         typesSection
+        underlineSection
         sizesSection
         statesSection
         contentSection
@@ -64,6 +65,58 @@ struct TextButtonDemo: View {
           Text("Delete")
         }
         .buttonStyle(.text(.destructive))
+      }
+    }
+  }
+
+  private var underlineSection: some View {
+    demoSection("Underline") {
+      VStack(alignment: .leading, spacing: theme.spacing.medium) {
+        HStack(spacing: theme.spacing.medium) {
+          Button {
+            lastSelection = "Underline Primary"
+          } label: {
+            Text("Continue")
+          }
+          .buttonStyle(.underline)
+
+          Button {
+            lastSelection = "Underline Secondary"
+          } label: {
+            Text("Maybe Later")
+          }
+          .buttonStyle(.underline(.secondary))
+
+          Button {
+            lastSelection = "Underline Destructive"
+          } label: {
+            Text("Delete")
+          }
+          .buttonStyle(.underline(.destructive))
+        }
+
+        HStack(spacing: theme.spacing.medium) {
+          Button {
+            lastSelection = "Underline Small"
+          } label: {
+            Text("Small")
+          }
+          .buttonStyle(.underline(.primary, size: .small))
+
+          Button {
+            lastSelection = "Underline Medium"
+          } label: {
+            Text("Medium")
+          }
+          .buttonStyle(.underline)
+
+          Button {
+            lastSelection = "Underline Large"
+          } label: {
+            Text("Large")
+          }
+          .buttonStyle(.underline(.primary, size: .large))
+        }
       }
     }
   }

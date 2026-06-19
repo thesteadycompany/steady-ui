@@ -12,3 +12,16 @@ extension ButtonStyle where Self == SteadyTextButtonStyle {
     SteadyTextButtonStyle(type: type, size: size)
   }
 }
+
+extension ButtonStyle where Self == SteadyUnderlineTextButtonStyle {
+  public static var underline: Self {
+    underline(.primary)
+  }
+
+  public static func underline(
+    _ type: SteadyButtonType = .primary,
+    size: SteadyTextButtonSize = .medium
+  ) -> Self {
+    SteadyUnderlineTextButtonStyle(type: type, size: size)
+  }
+}
