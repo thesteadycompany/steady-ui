@@ -21,6 +21,10 @@ struct RootView: View {
           NavigationLink("Button") {
             ButtonDemo()
           }
+
+          NavigationLink("TextField") {
+            TextFieldDemo()
+          }
         }
       }
     }
