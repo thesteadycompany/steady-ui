@@ -1,7 +1,7 @@
 import SteadyUI
 import SwiftUI
 
-struct ButtonDemo: View {
+struct CTAButtonDemo: View {
   @Environment(\.theme) private var theme
   @State private var lastSelection = "None"
 
@@ -16,7 +16,7 @@ struct ButtonDemo: View {
       .padding(theme.spacing.xLarge)
     }
     .background(theme.colors.background.base)
-    .navigationTitle("Buttons")
+    .navigationTitle("CTA Buttons")
     .navigationBarTitleDisplayMode(.inline)
   }
 
