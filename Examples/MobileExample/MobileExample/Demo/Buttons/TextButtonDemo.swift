@@ -1,7 +1,7 @@
 import SteadyUI
 import SwiftUI
 
-struct ButtonDemo: View {
+struct TextButtonDemo: View {
   @Environment(\.theme) private var theme
   @State private var lastSelection = "None"
 
@@ -10,19 +10,20 @@ struct ButtonDemo: View {
       LazyVStack(alignment: .leading, spacing: theme.spacing.xLarge) {
         header
         typesSection
+        sizesSection
         statesSection
         contentSection
       }
       .padding(theme.spacing.xLarge)
     }
     .background(theme.colors.background.base)
-    .navigationTitle("Buttons")
+    .navigationTitle("Text Buttons")
     .navigationBarTitleDisplayMode(.inline)
   }
 
   private var header: some View {
     VStack(alignment: .leading, spacing: theme.spacing.medium) {
-      Text("CTA Button")
+      Text("Text Button")
         .font(theme.fonts.display.small)
         .foregroundStyle(theme.colors.text.primary)
 
@@ -42,47 +43,74 @@ struct ButtonDemo: View {
 
   private var typesSection: some View {
     demoSection("Types") {
-      VStack(spacing: theme.spacing.medium) {
+      HStack(spacing: theme.spacing.medium) {
         Button {
           lastSelection = "Primary"
         } label: {
           Text("Continue")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.text)
 
         Button {
           lastSelection = "Secondary"
         } label: {
           Text("Maybe Later")
         }
-        .buttonStyle(.cta(.secondary))
+        .buttonStyle(.text(.secondary))
 
         Button {
           lastSelection = "Destructive"
         } label: {
           Text("Delete")
         }
-        .buttonStyle(.cta(.destructive))
+        .buttonStyle(.text(.destructive))
+      }
+    }
+  }
+
+  private var sizesSection: some View {
+    demoSection("Sizes") {
+      HStack(spacing: theme.spacing.medium) {
+        Button {
+          lastSelection = "Small"
+        } label: {
+          Text("Small")
+        }
+        .buttonStyle(.text(.primary, size: .small))
+
+        Button {
+          lastSelection = "Medium"
+        } label: {
+          Text("Medium")
+        }
+        .buttonStyle(.text)
+
+        Button {
+          lastSelection = "Large"
+        } label: {
+          Text("Large")
+        }
+        .buttonStyle(.text(.primary, size: .large))
       }
     }
   }
 
   private var statesSection: some View {
     demoSection("States") {
-      VStack(spacing: theme.spacing.medium) {
+      HStack(spacing: theme.spacing.medium) {
         Button {
           lastSelection = "Enabled"
         } label: {
           Text("Enabled Button")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.text)
 
         Button {
           lastSelection = "Disabled"
         } label: {
           Text("Disabled Button")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.text)
         .disabled(true)
       }
     }
@@ -90,20 +118,20 @@ struct ButtonDemo: View {
 
   private var contentSection: some View {
     demoSection("Content") {
-      VStack(spacing: theme.spacing.medium) {
+      HStack(spacing: theme.spacing.medium) {
         Button {
           lastSelection = "Leading icon"
         } label: {
-          Label("Pay Now", systemImage: "creditcard.fill")
+          Label("Edit", systemImage: "pencil")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.text)
 
         Button {
           lastSelection = "Plain text"
         } label: {
           Text("Button Content")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.text(.secondary))
       }
     }
   }

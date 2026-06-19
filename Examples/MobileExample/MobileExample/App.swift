@@ -17,11 +17,6 @@ struct RootView: View {
           NavigationLink("Token") {
             TokenDemo()
           }
-
-          NavigationLink("Button") {
-            ButtonDemo()
-          }
-
           NavigationLink("Badge") {
             BadgeDemo()
           }
@@ -33,6 +28,18 @@ struct RootView: View {
           NavigationLink("Toggle") {
             ToggleDemo()
           }
+        }
+
+        Section {
+          NavigationLink("CTA Button") {
+            CTAButtonDemo()
+          }
+
+          NavigationLink("Text Button") {
+            TextButtonDemo()
+          }
+        } header: {
+          Text("Buttons")
         }
       }
     }
