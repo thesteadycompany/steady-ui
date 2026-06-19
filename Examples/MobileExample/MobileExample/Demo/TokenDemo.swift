@@ -6,12 +6,14 @@ struct TokenDemo: View {
 
   var body: some View {
     ScrollView {
-      LazyVStack(alignment: .leading, spacing: 24) {
+      LazyVStack(alignment: .leading, spacing: theme.spacing.xLarge) {
         header
         colorSections
         fontSection
+        spacingSection
+        radiusSection
       }
-      .padding(20)
+      .padding(theme.spacing.xLarge)
     }
     .background(theme.colors.background.base)
     .navigationTitle("Tokens")
@@ -19,33 +21,34 @@ struct TokenDemo: View {
   }
 
   private var header: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: theme.spacing.medium) {
       Text("SteadyUI Theme")
         .font(theme.fonts.display.small)
         .foregroundStyle(theme.colors.text.primary)
 
-      Text("Semantic color and font tokens from the active theme.")
+      Text("Semantic color, font, spacing, and radius tokens from the active theme.")
         .font(theme.fonts.body.large)
         .foregroundStyle(theme.colors.text.secondary)
 
-      HStack(spacing: 12) {
+      HStack(spacing: theme.spacing.medium) {
         tokenBadge("Color")
         tokenBadge("Font")
-        tokenBadge("Dark Mode")
+        tokenBadge("Spacing")
+        tokenBadge("Radius")
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(20)
+    .padding(theme.spacing.xLarge)
     .background(theme.colors.background.elevated)
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
         .stroke(theme.colors.border.subtle)
     }
   }
 
   private var colorSections: some View {
-    VStack(alignment: .leading, spacing: 18) {
+    VStack(alignment: .leading, spacing: theme.spacing.large) {
       colorSection(
         "Action Colors",
         samples: [
@@ -115,7 +118,7 @@ struct TokenDemo: View {
 
   private var statusSection: some View {
     tokenSection("Status Colors") {
-      LazyVGrid(columns: gridColumns, spacing: 12) {
+      LazyVGrid(columns: gridColumns, spacing: theme.spacing.medium) {
         statusCard("info", color: theme.colors.status.info)
         statusCard("success", color: theme.colors.status.success)
         statusCard("warning", color: theme.colors.status.warning)
@@ -126,7 +129,7 @@ struct TokenDemo: View {
 
   private var fontSection: some View {
     tokenSection("Font Tokens") {
-      VStack(alignment: .leading, spacing: 12) {
+      VStack(alignment: .leading, spacing: theme.spacing.medium) {
         fontScaleView("display", scale: theme.fonts.display)
         fontScaleView("title", scale: theme.fonts.title)
         fontScaleView("body", scale: theme.fonts.body)
@@ -135,13 +138,39 @@ struct TokenDemo: View {
     }
   }
 
+  private var spacingSection: some View {
+    tokenSection("Spacing Tokens") {
+      LazyVGrid(columns: gridColumns, spacing: theme.spacing.medium) {
+        spacingCard(.init("spacing.zero", theme.spacing.zero))
+        spacingCard(.init("spacing.xSmall", theme.spacing.xSmall))
+        spacingCard(.init("spacing.small", theme.spacing.small))
+        spacingCard(.init("spacing.medium", theme.spacing.medium))
+        spacingCard(.init("spacing.large", theme.spacing.large))
+        spacingCard(.init("spacing.xLarge", theme.spacing.xLarge))
+        spacingCard(.init("spacing.xxLarge", theme.spacing.xxLarge))
+      }
+    }
+  }
+
+  private var radiusSection: some View {
+    tokenSection("Radius Tokens") {
+      LazyVGrid(columns: gridColumns, spacing: theme.spacing.medium) {
+        radiusCard(.init("radius.zero", theme.radius.zero))
+        radiusCard(.init("radius.small", theme.radius.small))
+        radiusCard(.init("radius.medium", theme.radius.medium))
+        radiusCard(.init("radius.large", theme.radius.large))
+        radiusCard(.init("radius.xLarge", theme.radius.xLarge))
+      }
+    }
+  }
+
   private var gridColumns: [GridItem] {
-    [GridItem(.adaptive(minimum: 150), spacing: 12)]
+    [GridItem(.adaptive(minimum: 150), spacing: theme.spacing.medium)]
   }
 
   private func colorSection(_ title: String, samples: [ColorSample]) -> some View {
     tokenSection(title) {
-      LazyVGrid(columns: gridColumns, spacing: 12) {
+      LazyVGrid(columns: gridColumns, spacing: theme.spacing.medium) {
         ForEach(samples) { sample in
           colorCard(sample)
         }
@@ -153,7 +182,7 @@ struct TokenDemo: View {
     _ title: String,
     @ViewBuilder content: () -> Content
   ) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: theme.spacing.medium) {
       Text(title)
         .font(theme.fonts.title.small)
         .foregroundStyle(theme.colors.text.primary)
@@ -163,10 +192,10 @@ struct TokenDemo: View {
   }
 
   private func colorCard(_ sample: ColorSample) -> some View {
-    HStack(spacing: 12) {
+    HStack(spacing: theme.spacing.medium) {
       swatch(sample.color)
 
-      VStack(alignment: .leading, spacing: 4) {
+      VStack(alignment: .leading, spacing: theme.spacing.xSmall) {
         Text(sample.name)
           .font(.caption.monospaced())
           .foregroundStyle(theme.colors.text.primary)
@@ -182,18 +211,18 @@ struct TokenDemo: View {
 
       Spacer(minLength: 0)
     }
-    .padding(12)
+    .padding(theme.spacing.medium)
     .frame(minHeight: 72)
     .background(theme.colors.background.elevated)
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
         .stroke(theme.colors.border.subtle)
     }
   }
 
   private func statusCard(_ name: String, color: StatusColor) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: theme.spacing.small) {
       Text(name)
         .font(theme.fonts.label.large)
         .foregroundStyle(color.foreground)
@@ -204,24 +233,24 @@ struct TokenDemo: View {
         .lineLimit(1)
         .minimumScaleFactor(0.65)
 
-      HStack(spacing: 8) {
+      HStack(spacing: theme.spacing.small) {
         swatch(color.background)
         swatch(color.foreground)
         swatch(color.border)
       }
     }
-    .padding(12)
+    .padding(theme.spacing.medium)
     .frame(maxWidth: .infinity, minHeight: 124, alignment: .leading)
     .background(color.background)
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
         .stroke(color.border)
     }
   }
 
   private func fontScaleView(_ name: String, scale: FontScale) -> some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: .leading, spacing: theme.spacing.small) {
       Text(name)
         .font(theme.fonts.label.large)
         .foregroundStyle(theme.colors.text.secondary)
@@ -230,18 +259,18 @@ struct TokenDemo: View {
       fontSample("medium", font: scale.medium)
       fontSample("small", font: scale.small)
     }
-    .padding(14)
+    .padding(theme.spacing.large)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(theme.colors.background.elevated)
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
         .stroke(theme.colors.border.subtle)
     }
   }
 
   private func fontSample(_ size: String, font: Font) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: theme.spacing.xSmall) {
       Text("The quick steady fox")
         .font(font)
         .foregroundStyle(theme.colors.text.primary)
@@ -252,15 +281,91 @@ struct TokenDemo: View {
         .font(.caption.monospaced())
         .foregroundStyle(theme.colors.text.tertiary)
     }
-    .padding(.vertical, 4)
+    .padding(.vertical, theme.spacing.xSmall)
+  }
+
+  private func spacingCard(_ sample: MetricSample) -> some View {
+    VStack(alignment: .leading, spacing: theme.spacing.medium) {
+      tokenName(sample.name, value: sample.value)
+
+      HStack(spacing: sample.value) {
+        metricBlock
+        metricBlock
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      HStack(spacing: theme.spacing.small) {
+        Text("gap")
+          .font(theme.fonts.label.small)
+          .foregroundStyle(theme.colors.text.tertiary)
+
+        RoundedRectangle(cornerRadius: theme.radius.small, style: .continuous)
+          .fill(theme.colors.action.primary.normal)
+          .frame(width: max(sample.value, 1), height: 8)
+      }
+    }
+    .padding(theme.spacing.medium)
+    .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
+    .background(theme.colors.background.elevated)
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
+        .stroke(theme.colors.border.subtle)
+    }
+  }
+
+  private func radiusCard(_ sample: MetricSample) -> some View {
+    VStack(alignment: .leading, spacing: theme.spacing.medium) {
+      tokenName(sample.name, value: sample.value)
+
+      RoundedRectangle(cornerRadius: sample.value, style: .continuous)
+        .fill(theme.colors.status.info.background)
+        .frame(height: 64)
+        .overlay {
+          RoundedRectangle(cornerRadius: sample.value, style: .continuous)
+            .stroke(theme.colors.status.info.border)
+        }
+    }
+    .padding(theme.spacing.medium)
+    .frame(maxWidth: .infinity, minHeight: 132, alignment: .leading)
+    .background(theme.colors.background.elevated)
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: theme.radius.medium, style: .continuous)
+        .stroke(theme.colors.border.subtle)
+    }
+  }
+
+  private func tokenName(_ name: String, value: CGFloat) -> some View {
+    VStack(alignment: .leading, spacing: theme.spacing.xSmall) {
+      Text("theme.\(name)")
+        .font(.caption.monospaced())
+        .foregroundStyle(theme.colors.text.primary)
+        .lineLimit(1)
+        .minimumScaleFactor(0.7)
+
+      Text("\(Int(value))")
+        .font(theme.fonts.label.small)
+        .foregroundStyle(theme.colors.text.tertiary)
+    }
+  }
+
+  private var metricBlock: some View {
+    RoundedRectangle(cornerRadius: theme.radius.small, style: .continuous)
+      .fill(theme.colors.background.subtle)
+      .frame(width: 36, height: 36)
+      .overlay {
+        RoundedRectangle(cornerRadius: theme.radius.small, style: .continuous)
+          .stroke(theme.colors.border.base)
+      }
   }
 
   private func tokenBadge(_ title: String) -> some View {
     Text(title)
       .font(theme.fonts.label.small)
       .foregroundStyle(theme.colors.text.link)
-      .padding(.horizontal, 10)
-      .padding(.vertical, 6)
+      .padding(.horizontal, theme.spacing.medium)
+      .padding(.vertical, theme.spacing.small)
       .background(theme.colors.status.info.background)
       .clipShape(Capsule())
       .overlay {
@@ -270,11 +375,11 @@ struct TokenDemo: View {
   }
 
   private func swatch(_ color: Color) -> some View {
-    RoundedRectangle(cornerRadius: 6, style: .continuous)
+    RoundedRectangle(cornerRadius: theme.radius.small, style: .continuous)
       .fill(color)
       .frame(width: 40, height: 40)
       .overlay {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
+        RoundedRectangle(cornerRadius: theme.radius.small, style: .continuous)
           .stroke(theme.colors.border.subtle)
       }
   }
@@ -289,5 +394,17 @@ private struct ColorSample: Identifiable {
   init(_ name: String, _ color: Color) {
     self.name = name
     self.color = color
+  }
+}
+
+private struct MetricSample: Identifiable {
+  var name: String
+  var value: CGFloat
+
+  var id: String { name }
+
+  init(_ name: String, _ value: CGFloat) {
+    self.name = name
+    self.value = value
   }
 }

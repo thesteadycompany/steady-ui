@@ -3,7 +3,9 @@ import SwiftUI
 extension SteadyTheme {
   public static let `default` = Self(
     colors: .default,
-    fonts: .default
+    fonts: .default,
+    radius: .default,
+    spacing: .default
   )
 }
 
@@ -134,5 +136,27 @@ extension FontTokens {
       medium: .subheadline.weight(.medium),
       small: .caption.weight(.medium)
     )
+  )
+}
+
+extension RadiusTokens {
+  public static let `default` = Self(
+    zero: 0,
+    small: 4,
+    medium: 8,
+    large: 12,
+    xLarge: 16
+  )
+}
+
+extension SpacingTokens {
+  public static let `default` = Self(
+    zero: 0,
+    xSmall: 4,
+    small: 8,
+    medium: 12,
+    large: 16,
+    xLarge: 24,
+    xxLarge: 32
   )
 }
