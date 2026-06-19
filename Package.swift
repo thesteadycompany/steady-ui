@@ -6,7 +6,6 @@ let package = Package(
   name: "SteadyUI",
   platforms: [
     .iOS(.v18),
-    .macOS(.v15),
   ],
   products: [
     .library(
