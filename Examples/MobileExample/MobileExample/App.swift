@@ -29,6 +29,10 @@ struct RootView: View {
           NavigationLink("TextField") {
             TextFieldDemo()
           }
+
+          NavigationLink("Toggle") {
+            ToggleDemo()
+          }
         }
       }
     }
