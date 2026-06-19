@@ -31,6 +31,14 @@ struct RootView: View {
         }
 
         Section {
+          NavigationLink("Switch Tab") {
+            SwitchTabDemo()
+          }
+        } header: {
+          Text("Switch Tabs")
+        }
+
+        Section {
           NavigationLink("CTA Button") {
             CTAButtonDemo()
           }
