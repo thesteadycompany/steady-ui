@@ -17,6 +17,10 @@ struct RootView: View {
           NavigationLink("Token") {
             TokenDemo()
           }
+
+          NavigationLink("Button") {
+            ButtonDemo()
+          }
         }
       }
     }
