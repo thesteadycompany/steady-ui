@@ -49,6 +49,14 @@ struct RootView: View {
         } header: {
           Text("Buttons")
         }
+
+        Section {
+          NavigationLink("Bottom ScrollView") {
+            BottomScrollViewDemo()
+          }
+        } header: {
+          Text("ScrollViews")
+        }
       }
     }
   }
