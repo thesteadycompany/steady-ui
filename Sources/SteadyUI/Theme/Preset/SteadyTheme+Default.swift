@@ -44,7 +44,7 @@ extension BackgroundColors {
   public static let `default` = Self(
     base: .steadyAdaptive(light: 0xFFFFFF, dark: 0x101114),
     subtle: .steadyAdaptive(light: 0xF6F7F9, dark: 0x181B20),
-    elevated: .steadyAdaptive(light: 0xFFFFFF, dark: 0x20242B),
+    elevated: .steadyAdaptive(light: 0xE8E8E8, dark: 0x20242B),
     overlay: .steadyAdaptive(
       light: 0x000000,
       dark: 0x000000,
