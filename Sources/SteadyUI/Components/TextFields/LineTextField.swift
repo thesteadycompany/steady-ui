@@ -1,6 +1,6 @@
 import SwiftUI
 
-public struct SteadyTextField: View {
+public struct LineTextField: View {
   @FocusState private var focused
   @Environment(\.theme) private var theme
   private let text: Binding<String>

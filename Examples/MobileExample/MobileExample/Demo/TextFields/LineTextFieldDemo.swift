@@ -1,7 +1,7 @@
 import SteadyUI
 import SwiftUI
 
-struct TextFieldDemo: View {
+struct LineTextFieldDemo: View {
   @Environment(\.theme) private var theme
   @State private var smallText = ""
   @State private var mediumText = ""
@@ -28,7 +28,7 @@ struct TextFieldDemo: View {
 
   private var header: some View {
     VStack(alignment: .leading, spacing: theme.spacing.medium) {
-      Text("Steady TextField")
+      Text("LineTextField")
         .font(theme.fonts.display.small)
         .foregroundStyle(theme.colors.text.primary)
 
@@ -49,9 +49,9 @@ struct TextFieldDemo: View {
   private var sizesSection: some View {
     demoSection("Sizes") {
       fieldStack {
-        SteadyTextField(text: $smallText, placeholder: "Small", size: .small)
-        SteadyTextField(text: $mediumText, placeholder: "Medium")
-        SteadyTextField(text: $largeText, placeholder: "Large", size: .large)
+        LineTextField(text: $smallText, placeholder: "Small", size: .small)
+        LineTextField(text: $mediumText, placeholder: "Medium")
+        LineTextField(text: $largeText, placeholder: "Large", size: .large)
       }
     }
   }
@@ -59,9 +59,9 @@ struct TextFieldDemo: View {
   private var filledSection: some View {
     demoSection("Filled Values") {
       fieldStack {
-        SteadyTextField(text: $email, placeholder: "Email")
+        LineTextField(text: $email, placeholder: "Email")
           .keyboardType(.emailAddress)
-        SteadyTextField(text: $company, placeholder: "Company")
+        LineTextField(text: $company, placeholder: "Company")
       }
     }
   }
@@ -69,8 +69,8 @@ struct TextFieldDemo: View {
   private var formSection: some View {
     demoSection("Form") {
       fieldStack {
-        SteadyTextField(text: $firstName, placeholder: "First Name")
-        SteadyTextField(text: $lastName, placeholder: "Last Name")
+        LineTextField(text: $firstName, placeholder: "First Name")
+        LineTextField(text: $lastName, placeholder: "Last Name")
       }
     }
   }
