@@ -21,13 +21,21 @@ struct RootView: View {
             BadgeDemo()
           }
 
-          NavigationLink("TextField") {
-            TextFieldDemo()
-          }
-
           NavigationLink("Toggle") {
             ToggleDemo()
           }
+        }
+
+        Section {
+          NavigationLink("BoxTextField") {
+            BoxTextFieldDemo()
+          }
+          
+          NavigationLink("LineTextField") {
+            LineTextFieldDemo()
+          }
+        } header: {
+          Text("TextFields")
         }
 
         Section {
