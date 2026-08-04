@@ -1,0 +1,84 @@
+#!/bin/bash
+set -euo pipefail
+
+repository_root=$(cd "$(dirname "$0")/.." && pwd)
+fixture_root=$(mktemp -d /private/tmp/steady-ui-verify-tests.XXXXXX)
+trap 'rm -rf -- "$fixture_root"' EXIT
+
+mkdir -p "$fixture_root/bin"
+cp "$repository_root/Tests/VerificationFixtures/xcodebuildmcp" "$fixture_root/bin/xcodebuildmcp"
+chmod +x "$fixture_root/bin/xcodebuildmcp"
+test_path="$fixture_root/bin:/usr/bin:/bin"
+
+set +e
+PATH="$test_path" STEADY_FAKE_MODE=boundary \
+  "$repository_root/Scripts/verify" environment --profile minimum --output json \
+  > "$fixture_root/runtime-boundary.json"
+boundary_exit=$?
+set -e
+test "$boundary_exit" -eq 78
+ruby -rjson -e '
+  result = JSON.parse(File.read(ARGV[0]))
+  check = result.fetch("checks").find { |value| value["name"] == "simulator" }
+  abort result.inspect unless check && !check["passed"] && check["actual"] == "No iPhone 16 Pro found in iOS 18.5 runtime."
+' "$fixture_root/runtime-boundary.json"
+
+child_pid_file="$fixture_root/timeout-child.pid"
+set +e
+PATH="$test_path" \
+  STEADY_FAKE_MODE=timeout \
+  STEADY_FAKE_CHILD_PID_FILE="$child_pid_file" \
+  STEADY_VERIFY_TIMEOUT_SECONDS=0.2 \
+  "$repository_root/Scripts/verify" environment --profile minimum --output json \
+  > "$fixture_root/timeout.json"
+timeout_exit=$?
+set -e
+test "$timeout_exit" -eq 78
+child_pid=$(tr -d '[:space:]' < "$child_pid_file")
+if kill -0 "$child_pid" 2>/dev/null; then
+  printf 'Timed-out descendant process %s is still running.\n' "$child_pid" >&2
+  exit 1
+fi
+ruby -rjson -e '
+  result = JSON.parse(File.read(ARGV[0]))
+  check = result.fetch("checks").find { |value| value["name"] == "simulator" }
+  abort result.inspect unless check && !check["passed"] && check["actual"].include?("captured-before-timeout")
+' "$fixture_root/timeout.json"
+
+schema_root="$fixture_root/schema-repository"
+mkdir -p \
+  "$schema_root/Scripts" \
+  "$schema_root/Examples/MobileExample/MobileExample.xcodeproj"
+cp "$repository_root/Scripts/verify" "$schema_root/Scripts/verify"
+cp "$repository_root/Package.swift" "$schema_root/Package.swift"
+cp \
+  "$repository_root/Examples/MobileExample/MobileExample.xcodeproj/project.pbxproj" \
+  "$schema_root/Examples/MobileExample/MobileExample.xcodeproj/project.pbxproj"
+cp "$repository_root/Package.swift" "$schema_root/.swiftpm"
+set +e
+PATH="$test_path" STEADY_FAKE_MODE=valid \
+  "$schema_root/Scripts/verify" ios --profile minimum --output json \
+  > "$fixture_root/schema-failure.json"
+schema_exit=$?
+set -e
+test "$schema_exit" -eq 70
+ruby -rjson -e '
+  result = JSON.parse(File.read(ARGV[0]))
+  required = %w[command profile is_gate checks executed_commands artifact_paths]
+  missing = required - result.keys
+  abort "missing #{missing.inspect}" unless missing.empty?
+  abort result.inspect unless result["command"] == "ios" && result["profile"] == "minimum" && result["exit_code"] == 70
+' "$fixture_root/schema-failure.json"
+
+set +e
+"$repository_root/Scripts/verify" environment --profile unsupported --output json \
+  > "$fixture_root/usage.json"
+usage_exit=$?
+set -e
+test "$usage_exit" -eq 64
+ruby -rjson -e '
+  result = JSON.parse(File.read(ARGV[0]))
+  abort result.inspect unless result.key?("usage") && !result.key?("command")
+' "$fixture_root/usage.json"
+
+printf '%s\n' 'Scripts/verify regression tests passed.'
