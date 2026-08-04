@@ -54,4 +54,3 @@ GitHub Actions runs the same entry point with the hosted-runner profile:
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the current item, dependencies, acceptance criteria, and verification evidence. Contributors and agents must also follow [AGENTS.md](AGENTS.md).
-

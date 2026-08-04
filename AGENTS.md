@@ -31,4 +31,3 @@
 3. Change an item to `done` only after all acceptance checks pass and evidence is present.
 4. Recompute `current_phase` and `current_focus`; mark the next dependency-satisfied item `ready`.
 5. Do not lower test, accessibility, documentation, or evidence gates to recover schedule.
-
