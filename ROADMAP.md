@@ -5,7 +5,7 @@ roadmap_version: 1
 last_updated: 2026-08-04
 horizon: 10-weeks
 current_phase: foundation
-current_focus: SU-001
+current_focus: SU-002
 owner: repository-maintainer
 ```
 
@@ -18,7 +18,7 @@ owner: repository-maintainer
 ```yaml
 id: SU-001
 title: Establish the verification foundation
-status: in_progress
+status: done
 priority: P0
 phase: foundation
 depends_on: []
@@ -37,7 +37,11 @@ verification:
   - ./Scripts/verify ios --profile minimum --output json
   - ./Scripts/verify environment --profile ci --output json
   - ./Scripts/verify ios --profile ci --output json
-evidence: []
+evidence:
+  - "2026-08-04: ./Scripts/verify ios --profile minimum --output json passed in a clean git archive on iPhone 16 Pro with iOS 18.5."
+  - "Tests: ThemeEnvironmentTests 2 passed; PublicContractTests 2 passed."
+  - "CI: https://github.com/thesteadycompany/steady-ui/actions/runs/30866870333"
+  - "Files: ROADMAP.md, AGENTS.md, README.md, Package.swift, MobileExample project, Tests/SteadyUITests, Scripts/verify, and .github/workflows/verify.yml."
 ```
 
 ### SU-002 — Normalize the v1 public API baseline
@@ -45,7 +49,7 @@ evidence: []
 ```yaml
 id: SU-002
 title: Normalize the v1 public API baseline
-status: planned
+status: ready
 priority: P0
 phase: foundation
 depends_on: [SU-001]
@@ -255,4 +259,3 @@ verification:
   - ./Scripts/verify ios --profile minimum --output json
 evidence: []
 ```
-
