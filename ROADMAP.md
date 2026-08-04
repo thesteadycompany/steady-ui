@@ -5,7 +5,7 @@ roadmap_version: 1
 last_updated: 2026-08-04
 horizon: 10-weeks
 current_phase: foundation
-current_focus: SU-002
+current_focus: SU-003
 owner: repository-maintainer
 ```
 
@@ -49,7 +49,7 @@ evidence:
 ```yaml
 id: SU-002
 title: Normalize the v1 public API baseline
-status: in_progress
+status: done
 priority: P0
 phase: foundation
 depends_on: [SU-001]
@@ -64,7 +64,13 @@ acceptance:
   - Sources and MobileExample compile with the replacement names.
 verification:
   - ./Scripts/verify ios --profile minimum --output json
-evidence: []
+evidence:
+  - "2026-08-04: ./Scripts/verify ios --profile minimum --output json passed on iPhone 16 Pro with iOS 18.5."
+  - "Tests: PublicContractTests 4 passed; ThemeEnvironmentTests 2 passed."
+  - "API inventory: zero executable-source matches for SteadyBadgeStyle, SteadyBadgeType, SteadyCTAButonStyle, SteadyButtonType, .cta, .text, or .underline factories."
+  - "MobileExample: iPhone 16 Pro iOS 18.5 build passed with SettingsFormUseCase linked from RootView."
+  - "Review: Superpowers code review completed with no unresolved P0/P1 findings."
+  - "Files: README.md, ROADMAP.md, Sources/SteadyUI Badge and Button APIs, Tests/SteadyUITests/PublicContractTests.swift, and MobileExample demos/use case."
 ```
 
 ### SU-003 — Define tokens and component contracts
@@ -72,7 +78,7 @@ evidence: []
 ```yaml
 id: SU-003
 title: Define tokens and component contracts
-status: planned
+status: ready
 priority: P0
 phase: foundation
 depends_on: [SU-002]
