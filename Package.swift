@@ -17,6 +17,10 @@ let package = Package(
     .target(
       name: "SteadyUI"
     ),
+    .testTarget(
+      name: "SteadyUITests",
+      dependencies: ["SteadyUI"]
+    ),
   ],
   swiftLanguageModes: [.v6]
 )
