@@ -566,7 +566,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
       - name: Install XcodeBuildMCP 2.1.0
@@ -577,7 +577,7 @@ jobs:
           ./Scripts/verify ios --profile ci --output json > .build/verification/verify-ci.json
       - name: Upload verification results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: verification-results
           path: .build/verification
