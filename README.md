@@ -7,7 +7,8 @@ SteadyUI is a SwiftUI design-system package for iOS 18 and later. The package is
 - Xcode 26.4.1
 - Swift 6.3.1
 - iOS 18 or later
-- XcodeBuildMCP 2.1.0 for repository verification
+- Node.js 20.19.0 or later
+- XcodeBuildMCP 2.1.0 installed from the repository lockfile with `npm ci --ignore-scripts`
 
 ## Add the Package
 
@@ -39,6 +40,8 @@ struct ExampleApp: App {
 Run the minimum supported runtime before requesting review:
 
 ```bash
+npm ci --ignore-scripts
+export PATH="$PWD/node_modules/.bin:$PATH"
 ./Scripts/verify environment --profile minimum --output json
 ./Scripts/verify ios --profile minimum --output json
 ```

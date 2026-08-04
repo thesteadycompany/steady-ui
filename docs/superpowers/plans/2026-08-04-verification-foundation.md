@@ -537,6 +537,9 @@ git commit -m "build: add reproducible iOS verification"
 **Files:**
 - Create: .github/workflows/verify.yml
 - Create: README.md
+- Create: package.json
+- Create: package-lock.json
+- Modify: .gitignore
 
 **Interfaces:**
 - Consumes: Scripts/verify ios --profile ci --output json
@@ -576,12 +579,17 @@ jobs:
           persist-credentials: false
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
-      - name: Install XcodeBuildMCP 2.1.0
-        run: npm install --global xcodebuildmcp@2.1.0
+      - name: Install locked XcodeBuildMCP dependencies
+        run: |
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/xcodebuildmcp --version)" = "2.1.0"
       - name: Test verification script
-        run: ./Scripts/test-verify
+        run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          ./Scripts/test-verify
       - name: Verify iOS package
         run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
           mkdir -p .build/verification
           ./Scripts/verify ios --profile ci --output json > .build/verification/verify-ci.json
       - name: Upload verification results
@@ -598,7 +606,7 @@ jobs:
 
 ~~~~bash
 ruby -e 'require "yaml"; YAML.load_file(".github/workflows/verify.yml")'
-rg -n 'macos-26|Xcode_26\.4\.1|xcodebuildmcp@2\.1\.0|Scripts/test-verify|Scripts/verify ios --profile ci|if: always' .github/workflows/verify.yml
+rg -n 'macos-26|Xcode_26\.4\.1|npm ci --ignore-scripts|node_modules/.bin|Scripts/test-verify|Scripts/verify ios --profile ci|if: always' .github/workflows/verify.yml
 ~~~~
 
 Expected: YAML parse exit 0, 모든 고정값 발견.
@@ -608,13 +616,15 @@ Expected: YAML parse exit 0, 모든 고정값 발견.
 다음 섹션을 정확히 포함한다.
 
 - SteadyUI는 iOS 18+ SwiftUI package이며 pre-1.0이라는 소개
-- Requirements: Xcode 26.4.1, Swift 6.3.1, iOS 18+, XcodeBuildMCP 2.1.0
+- Requirements: Xcode 26.4.1, Swift 6.3.1, iOS 18+, Node.js 20.19.0+, XcodeBuildMCP 2.1.0
 - Add the Package: 첫 tag 전에는 Xcode local package로 추가
 - Apply the Default Theme: ContentView().environment(\.theme, .default) 예제
 - Verify Changes: 아래 네 명령
 - Roadmap: ROADMAP.md와 AGENTS.md 링크
 
 ~~~~bash
+npm ci --ignore-scripts
+export PATH="$PWD/node_modules/.bin:$PATH"
 ./Scripts/verify environment --profile minimum --output json
 ./Scripts/verify ios --profile minimum --output json
 ./Scripts/verify ios --profile ci --output json

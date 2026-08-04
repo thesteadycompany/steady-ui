@@ -24,14 +24,19 @@ jobs:
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
 
-      - name: Install XcodeBuildMCP 2.1.0
-        run: npm install --global xcodebuildmcp@2.1.0
+      - name: Install locked XcodeBuildMCP dependencies
+        run: |
+          npm ci --ignore-scripts
+          test "$(./node_modules/.bin/xcodebuildmcp --version)" = "2.1.0"
 
       - name: Test verification script
-        run: ./Scripts/test-verify
+        run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          ./Scripts/test-verify
 
       - name: Verify iOS package
         run: |
+          export PATH="$PWD/node_modules/.bin:$PATH"
           mkdir -p .build/verification
           ./Scripts/verify ios --profile ci --output json > .build/verification/verify-ci.json
 

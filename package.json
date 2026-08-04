@@ -1,0 +1,10 @@
+{
+  "name": "steady-ui-verification",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "xcodebuildmcp": "2.1.0"
+  }
+}

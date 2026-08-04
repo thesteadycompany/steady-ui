@@ -172,8 +172,8 @@ xcodebuildmcp simulator test \
 GitHub Actions는 PR과 `main` 브랜치 푸시에서 `macos-26` 러너를 사용한다.
 
 1. `/Applications/Xcode_26.4.1.app`을 선택한다.
-2. `npm install -g xcodebuildmcp@2.1.0`으로 CLI 버전을 고정한다.
-3. `./Scripts/verify ios --profile ci --output json`을 실행하고 표준 출력을 결과 파일로 저장한다.
+2. 저장소의 `package-lock.json`을 사용해 `npm ci --ignore-scripts`로 XcodeBuildMCP와 전이 의존성을 설치한다.
+3. 저장소의 `node_modules/.bin`을 PATH 맨 앞에 둔 뒤 `./Scripts/verify ios --profile ci --output json`을 실행하고 표준 출력을 결과 파일로 저장한다.
 4. 성공 또는 실패와 관계없이 결과 JSON과 테스트 artifact를 업로드한다.
 
 GitHub의 macOS 26 호스티드 이미지에는 Xcode 26.4.1과 iOS 26.x 런타임이 있지만 iOS 18.5 런타임은 없다. macOS 15 이미지에는 iOS 18.5가 있지만 Xcode 26.4.1과 Swift 6.3.1 조합이 없다. 따라서 모든 PR은 `ci` 프로필로 검증하고, `minimum` 프로필은 로컬 및 릴리스 게이트로 유지한다. 동일 환경의 self-hosted runner가 생기면 스크립트 변경 없이 `minimum` 프로필을 CI job에 추가한다.
