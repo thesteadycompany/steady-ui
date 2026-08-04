@@ -36,6 +36,26 @@ struct PublicContractTests {
     )
   }
 
+  @Test("button styles use the v1 variant and prefixed factories")
+  @MainActor
+  func buttonStylesUseV1VariantAndPrefixedFactories() {
+    let variant: SteadyButtonVariant = .secondary
+    let cta: SteadyCTAButtonStyle = .steadyCTA(variant)
+    let text: SteadyTextButtonStyle = .steadyText(variant, size: .small)
+    let underline: SteadyUnderlineTextButtonStyle = .steadyUnderline(
+      variant,
+      size: .large
+    )
+
+    requireEquatableAndSendable(SteadyButtonVariant.self)
+    _ = SteadyCTAButtonStyle(variant: variant)
+    _ = SteadyTextButtonStyle(variant: variant, size: .medium)
+    _ = SteadyUnderlineTextButtonStyle(variant: variant, size: .medium)
+    _ = cta
+    _ = text
+    _ = underline
+  }
+
   private func requireEquatableAndSendable<Value: Equatable & Sendable>(
     _: Value.Type
   ) {}

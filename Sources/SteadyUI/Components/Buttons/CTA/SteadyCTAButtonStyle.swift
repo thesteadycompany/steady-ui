@@ -1,12 +1,12 @@
 import SwiftUI
 
-public struct SteadyCTAButonStyle: ButtonStyle {
+public struct SteadyCTAButtonStyle: ButtonStyle {
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.theme) private var theme
-  private let type: SteadyButtonType
+  private let variant: SteadyButtonVariant
 
-  public init(type: SteadyButtonType) {
-    self.type = type
+  public init(variant: SteadyButtonVariant) {
+    self.variant = variant
   }
 
   public func makeBody(configuration: Configuration) -> some View {
@@ -31,7 +31,7 @@ public struct SteadyCTAButonStyle: ButtonStyle {
   }
 
   private var color: ActionColor {
-    switch type {
+    switch variant {
     case .primary: theme.colors.action.primary
     case .secondary: theme.colors.action.secondary
     case .destructive: theme.colors.action.destructive
@@ -42,7 +42,7 @@ public struct SteadyCTAButonStyle: ButtonStyle {
     guard isEnabled else {
       return theme.colors.text.disabled
     }
-    switch type {
+    switch variant {
     case .primary, .destructive:
       return theme.colors.text.inverse
     case .secondary:

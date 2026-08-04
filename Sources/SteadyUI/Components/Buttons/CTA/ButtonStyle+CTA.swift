@@ -1,11 +1,11 @@
 import SwiftUI
 
-extension ButtonStyle where Self == SteadyCTAButonStyle {
-  public static var cta: Self {
-    cta(.primary)
+extension ButtonStyle where Self == SteadyCTAButtonStyle {
+  public static var steadyCTA: Self {
+    steadyCTA(.primary)
   }
 
-  public static func cta(_ type: SteadyButtonType) -> Self {
-    SteadyCTAButonStyle(type: type)
+  public static func steadyCTA(_ variant: SteadyButtonVariant) -> Self {
+    SteadyCTAButtonStyle(variant: variant)
   }
 }
