@@ -28,7 +28,7 @@
 - 루트 `AGENTS.md`에 다음 작업 선택, 단일 진행 항목, 테스트 우선 구현, 상태 전환, 근거 기록 규칙을 정의한다.
 - 루트 `README.md`에 지원 환경과 로컬 검증 명령을 기록한다.
 - `Package.swift`에 Swift Testing 기반 `SteadyUITests` 타깃을 추가한다.
-- 기본 Theme, Spacing, Radius의 결정적인 공개 계약을 검증하는 첫 테스트를 추가한다.
+- Theme environment의 기본값과 override, Theme equality, 핵심 타입 conformance를 검증하는 첫 테스트를 추가한다.
 - `Examples/MobileExample/MobileExample.xcodeproj/project.pbxproj`의 프로젝트 및 앱 타깃 배포 하한을 모두 iOS 18.0으로 통일한다.
 - `Scripts/verify`를 로컬과 CI의 단일 검증 진입점으로 추가한다.
 - GitHub Actions에서 PR과 `main` 푸시마다 CI 검증 프로필을 실행하고 JSON 결과를 artifact로 보존한다.
@@ -54,7 +54,7 @@
 ### 검증
 
 - `Scripts/verify`: 환경 검사와 host/iOS 검증을 조정하고 구조화된 결과를 출력하는 얇은 실행 스크립트
-- `Tests/SteadyUITests/DefaultThemeTests.swift`: 기본 토큰 값과 사용자 정의 Theme 값 보존 검증
+- `Tests/SteadyUITests/ThemeEnvironmentTests.swift`: Theme environment 기본값과 override 검증
 - `Tests/SteadyUITests/PublicContractTests.swift`: 핵심 Theme 및 토큰 타입의 `Equatable`, `Sendable` 계약 검증
 - `.github/workflows/verify.yml`: 고정된 CI 프로필 실행과 결과 artifact 업로드
 
@@ -149,13 +149,11 @@ xcodebuildmcp simulator test \
 
 첫 테스트는 변경 의도가 분명하고 플랫폼 렌더링에 의존하지 않는 계약만 고정한다.
 
-### 기본 Theme 및 토큰
+### Theme environment
 
-- `SteadyTheme.default.spacing`의 `zero`, `xSmall`, `small`, `medium`, `large`, `xLarge`, `xxLarge`가 각각 `0`, `4`, `8`, `12`, `16`, `24`, `32`인지 검증한다.
-- `SteadyTheme.default.radius`의 `zero`, `small`, `medium`, `large`, `xLarge`가 각각 `0`, `4`, `8`, `12`, `16`인지 검증한다.
-- 사용자 정의 `ColorTokens`, `FontTokens`, `RadiusTokens`, `SpacingTokens`로 생성한 `SteadyTheme`이 전달된 값을 보존하는지 검증한다.
-
-색상의 adaptive light/dark 해석과 Font 렌더링은 이 PR의 결정적 단위 테스트 범위에 포함하지 않는다.
+- 새 `EnvironmentValues`가 `SteadyTheme.default`를 제공하는지 검증한다.
+- 수정한 Theme를 `EnvironmentValues.theme`에 설정하면 소비자가 같은 값을 조회하는지 검증한다.
+- 정확한 토큰 숫자를 고정하는 변경 감지 테스트는 작성하지 않는다. 이 PR은 소비자에게 보이는 environment 동작을 검증한다.
 
 ### 공개 타입 계약
 
@@ -167,7 +165,7 @@ xcodebuildmcp simulator test \
 - `RadiusTokens`
 - `SpacingTokens`
 
-같은 타입이 공개 `Equatable` 계약에 따라 동일 값 비교를 수행할 수 있는지 테스트한다. 선언 이름 전체를 문자열로 스캔하는 API 인벤토리 테스트는 공개 API 이름을 정리하는 후속 PR에서 추가한다.
+같은 타입이 공개 `Equatable` 계약을 유지하는지 컴파일 타임 helper로 검증하고, Theme의 한 토큰 그룹이 달라졌을 때 전체 Theme 비교가 달라지는지 테스트한다. 선언 이름 전체를 문자열로 스캔하는 API 인벤토리 테스트는 공개 API 이름을 정리하는 후속 PR에서 추가한다.
 
 ## 7. CI 설계
 
@@ -213,7 +211,7 @@ GitHub의 macOS 26 호스티드 이미지에는 Xcode 26.4.1과 iOS 26.x 런타�
 - 로컬 `./Scripts/verify ios --profile minimum --output json`이 iOS 18.5의 iPhone 16 Pro에서 성공한다.
 - CI `./Scripts/verify ios --profile ci --output json`이 iOS 26.4의 iPhone 17 Pro에서 성공한다.
 - 깨끗한 체크아웃에서 스크립트가 무시된 SwiftPM 워크스페이스를 준비하고 테스트를 실행한다.
-- Spacing, Radius, 사용자 정의 Theme, 핵심 타입 계약 테스트가 통과한다.
+- Theme environment 기본값/override, Theme equality, 핵심 타입 conformance 테스트가 통과한다.
 - Package와 MobileExample의 배포 하한이 모두 iOS 18.0이다.
 - README와 CI가 같은 `Scripts/verify` 진입점을 사용한다.
 - CI 결과가 실패 시에도 artifact로 보존된다.

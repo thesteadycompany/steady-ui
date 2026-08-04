@@ -27,7 +27,7 @@
 - Create ROADMAP.md: 10주 작업 ID, 상태, 의존성, 완료 조건, 검증, 근거
 - Create AGENTS.md: 작업 선택, TDD, UI 추상화, 검증 및 상태 갱신 규칙
 - Create README.md: 요구 환경과 로컬/CI 검증 방법
-- Create Tests/SteadyUITests/DefaultThemeTests.swift: 기본 토큰과 Theme 초기화 계약
+- Create Tests/SteadyUITests/ThemeEnvironmentTests.swift: Theme environment 기본값과 override 계약
 - Create Tests/SteadyUITests/PublicContractTests.swift: Equatable 및 Sendable 계약
 - Create Scripts/verify: environment, host, ios 명령과 JSON 출력
 - Create .github/workflows/verify.yml: ci 프로필과 artifact
@@ -191,62 +191,40 @@ git commit -m "docs: operationalize SteadyUI roadmap"
 ### Task 2: Add the First iOS Test Contracts and Align Deployment Floors
 
 **Files:**
-- Create: Tests/SteadyUITests/DefaultThemeTests.swift
+- Create: Tests/SteadyUITests/ThemeEnvironmentTests.swift
 - Create: Tests/SteadyUITests/PublicContractTests.swift
 - Modify: Package.swift
 - Modify: Examples/MobileExample/MobileExample.xcodeproj/project.pbxproj
 
 **Interfaces:**
-- Consumes: SteadyTheme, ColorTokens, FontTokens, RadiusTokens, SpacingTokens
+- Consumes: EnvironmentValues.theme, SteadyTheme, ColorTokens, FontTokens, RadiusTokens, SpacingTokens
 - Produces: SteadyUITests 타깃과 iOS 18.0으로 통일된 네 build setting
 
-- [ ] **Step 1: 실패할 기본 Theme 테스트를 작성한다**
+- [ ] **Step 1: 실패할 Theme environment 테스트를 작성한다**
 
 ~~~~swift
 import SteadyUI
+import SwiftUI
 import Testing
 
-@Suite("Default theme")
-struct DefaultThemeTests {
-  @Test("default spacing values remain stable")
-  func defaultSpacingValues() {
-    let value = SteadyTheme.default.spacing
-    #expect(value.zero == 0)
-    #expect(value.xSmall == 4)
-    #expect(value.small == 8)
-    #expect(value.medium == 12)
-    #expect(value.large == 16)
-    #expect(value.xLarge == 24)
-    #expect(value.xxLarge == 32)
+@Suite("Theme environment")
+struct ThemeEnvironmentTests {
+  @Test("environment uses the default theme")
+  func environmentUsesDefaultTheme() {
+    let values = EnvironmentValues()
+
+    #expect(values.theme == .default)
   }
 
-  @Test("default radius values remain stable")
-  func defaultRadiusValues() {
-    let value = SteadyTheme.default.radius
-    #expect(value.zero == 0)
-    #expect(value.small == 4)
-    #expect(value.medium == 8)
-    #expect(value.large == 12)
-    #expect(value.xLarge == 16)
-  }
+  @Test("environment preserves a theme override")
+  func environmentPreservesThemeOverride() {
+    var expected = SteadyTheme.default
+    expected.spacing.large = 37
+    var values = EnvironmentValues()
 
-  @Test("custom theme preserves supplied token groups")
-  func customThemePreservesTokens() {
-    let radius = RadiusTokens(zero: 1, small: 2, medium: 3, large: 4, xLarge: 5)
-    let spacing = SpacingTokens(
-      zero: 1, xSmall: 2, small: 3, medium: 4,
-      large: 5, xLarge: 6, xxLarge: 7
-    )
-    let theme = SteadyTheme(
-      colors: .default,
-      fonts: .default,
-      radius: radius,
-      spacing: spacing
-    )
-    #expect(theme.colors == .default)
-    #expect(theme.fonts == .default)
-    #expect(theme.radius == radius)
-    #expect(theme.spacing == spacing)
+    values.theme = expected
+
+    #expect(values.theme == expected)
   }
 }
 ~~~~
@@ -259,6 +237,14 @@ import Testing
 
 @Suite("Public contracts")
 struct PublicContractTests {
+  @Test("theme equality observes token changes")
+  func themeEqualityObservesTokenChanges() {
+    var modified = SteadyTheme.default
+    modified.spacing.large += 1
+
+    #expect(modified != SteadyTheme.default)
+  }
+
   @Test("theme and token groups remain Equatable and Sendable")
   func themeAndTokenContracts() {
     requireEquatableAndSendable(SteadyTheme.self)
@@ -316,7 +302,7 @@ IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 xcodebuildmcp simulator test --workspace-path .swiftpm/xcode/package.xcworkspace --scheme SteadyUI --simulator-id BB71DA41-A3DA-491A-940D-37D5B31C9C0E --configuration Debug --output json
 ~~~~
 
-Expected: DefaultThemeTests 3개와 PublicContractTests 1개가 PASS.
+Expected: ThemeEnvironmentTests 2개와 PublicContractTests 2개가 PASS.
 
 - [ ] **Step 7: 배포 하한과 제품 소스 비변경을 검증한다**
 
@@ -724,7 +710,7 @@ gh run list --workflow verify.yml --branch feature/verification-foundation --sta
 반환된 실제 URL을 SU-001 evidence에 기록한다. 같은 evidence 배열에 다음을 기록한다.
 
 - 2026-08-04 깨끗한 archive에서 minimum 성공
-- DefaultThemeTests 3개와 PublicContractTests 1개 성공
+- ThemeEnvironmentTests 2개와 PublicContractTests 2개 성공
 - 변경 파일: Package.swift, MobileExample project, Scripts/verify, workflow, README, ROADMAP, AGENTS
 
 SU-001을 done, SU-002를 ready, current_focus를 SU-002로 바꾸고 current_phase는 foundation으로 유지한다.
