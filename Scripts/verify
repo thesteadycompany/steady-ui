@@ -72,6 +72,8 @@ struct ProcessResult {
   let exitCode: Int32
   let standardOutput: String
   let standardError: String
+  let timedOut: Bool
+  let timeoutSeconds: TimeInterval
 }
 
 struct Options {
@@ -86,7 +88,13 @@ struct EnvironmentInspection {
 }
 
 struct MCPEnvelope: Decodable {
+  let content: [MCPContent]?
   let isError: Bool?
+}
+
+struct MCPContent: Decodable {
+  let type: String
+  let text: String?
 }
 
 enum VerifyError: Error, CustomStringConvertible {
@@ -181,11 +189,79 @@ func parseOptions(_ arguments: [String]) throws -> Options {
   return Options(command: command, profile: profile)
 }
 
+func withCStringArray<Result>(
+  _ strings: [String],
+  body: (UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>) -> Result
+) -> Result {
+  var pointers = strings.map { strdup($0) } + [nil]
+  defer {
+    for pointer in pointers.dropLast() {
+      free(pointer)
+    }
+  }
+  return pointers.withUnsafeMutableBufferPointer { buffer in
+    body(buffer.baseAddress!)
+  }
+}
+
+func exitCode(from status: Int32) -> Int32 {
+  let signal = status & 0x7f
+  return signal == 0 ? (status >> 8) & 0xff : 128 + signal
+}
+
+func pollChild(_ processID: pid_t) throws -> Int32? {
+  var status: Int32 = 0
+  let result = waitpid(processID, &status, WNOHANG)
+  if result == processID {
+    return exitCode(from: status)
+  }
+  if result == 0 || (result == -1 && errno == EINTR) {
+    return nil
+  }
+  throw VerifyError.process(
+    "Failed to wait for process \(processID): \(String(cString: strerror(errno)))"
+  )
+}
+
+func waitForChild(
+  _ processID: pid_t,
+  timeout: TimeInterval
+) throws -> Int32? {
+  let deadline = Date().addingTimeInterval(timeout)
+  repeat {
+    if let status = try pollChild(processID) {
+      return status
+    }
+    usleep(10_000)
+  } while Date() < deadline
+  return nil
+}
+
+func processGroupExists(_ processGroupID: pid_t) -> Bool {
+  kill(-processGroupID, 0) == 0 || errno == EPERM
+}
+
+func terminateProcessGroup(_ processGroupID: pid_t) throws {
+  _ = kill(-processGroupID, SIGTERM)
+  let deadline = Date().addingTimeInterval(5)
+  while processGroupExists(processGroupID), Date() < deadline {
+    usleep(10_000)
+  }
+  if processGroupExists(processGroupID) {
+    _ = kill(-processGroupID, SIGKILL)
+  }
+}
+
 func run(
   _ executable: String,
   _ arguments: [String],
-  currentDirectory: URL
+  currentDirectory: URL,
+  timeout defaultTimeout: TimeInterval = 60
 ) throws -> ProcessResult {
+  let timeout = ProcessInfo.processInfo.environment["STEADY_VERIFY_TIMEOUT_SECONDS"]
+    .flatMap(Double.init)
+    .flatMap { $0 > 0 ? $0 : nil }
+    ?? defaultTimeout
   let fileManager = FileManager.default
   let captureDirectory = fileManager.temporaryDirectory
     .appendingPathComponent("steady-ui-verify-\(UUID().uuidString)", isDirectory: true)
@@ -204,25 +280,83 @@ func run(
 
   let standardOutputHandle = try FileHandle(forWritingTo: standardOutputURL)
   let standardErrorHandle = try FileHandle(forWritingTo: standardErrorURL)
-  let process = Process()
-  process.executableURL = URL(fileURLWithPath: executable)
-  process.arguments = arguments
-  process.currentDirectoryURL = currentDirectory
-  process.standardOutput = standardOutputHandle
-  process.standardError = standardErrorHandle
-
-  do {
-    try process.run()
-  } catch {
+  defer {
     try? standardOutputHandle.close()
     try? standardErrorHandle.close()
+  }
+
+  var fileActions: posix_spawn_file_actions_t?
+  var attributes: posix_spawnattr_t?
+  guard posix_spawn_file_actions_init(&fileActions) == 0 else {
+    throw VerifyError.process("Failed to initialize process file actions.")
+  }
+  defer { posix_spawn_file_actions_destroy(&fileActions) }
+  guard posix_spawnattr_init(&attributes) == 0 else {
+    throw VerifyError.process("Failed to initialize process attributes.")
+  }
+  defer { posix_spawnattr_destroy(&attributes) }
+
+  let configurationResults = [
+    posix_spawn_file_actions_adddup2(
+      &fileActions,
+      standardOutputHandle.fileDescriptor,
+      STDOUT_FILENO
+    ),
+    posix_spawn_file_actions_adddup2(
+      &fileActions,
+      standardErrorHandle.fileDescriptor,
+      STDERR_FILENO
+    ),
+    posix_spawn_file_actions_addclose(
+      &fileActions,
+      standardOutputHandle.fileDescriptor
+    ),
+    posix_spawn_file_actions_addclose(
+      &fileActions,
+      standardErrorHandle.fileDescriptor
+    ),
+    currentDirectory.path.withCString {
+      posix_spawn_file_actions_addchdir(&fileActions, $0)
+    },
+    posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP)),
+    posix_spawnattr_setpgroup(&attributes, 0),
+  ]
+  guard configurationResults.allSatisfy({ $0 == 0 }) else {
+    throw VerifyError.process("Failed to configure process launch.")
+  }
+
+  var processID: pid_t = 0
+  let environment = ProcessInfo.processInfo.environment
+    .sorted { $0.key < $1.key }
+    .map { "\($0.key)=\($0.value)" }
+  let spawnError = executable.withCString { executablePath in
+    withCStringArray([executable] + arguments) { argumentPointers in
+      withCStringArray(environment) { environmentPointers in
+        posix_spawn(
+          &processID,
+          executablePath,
+          &fileActions,
+          &attributes,
+          argumentPointers,
+          environmentPointers
+        )
+      }
+    }
+  }
+  guard spawnError == 0 else {
     let command = ([executable] + arguments).joined(separator: " ")
     throw VerifyError.process(
-      "Failed to launch '\(command)': \(error.localizedDescription)"
+      "Failed to launch '\(command)': \(String(cString: strerror(spawnError)))"
     )
   }
 
-  process.waitUntilExit()
+  var timedOut = false
+  var childExitCode = try waitForChild(processID, timeout: timeout)
+  if childExitCode == nil {
+    timedOut = true
+    try terminateProcessGroup(processID)
+    childExitCode = try waitForChild(processID, timeout: 5)
+  }
   try standardOutputHandle.close()
   try standardErrorHandle.close()
 
@@ -237,9 +371,11 @@ func run(
 
   return ProcessResult(
     command: [executable] + arguments,
-    exitCode: process.terminationStatus,
+    exitCode: timedOut ? 124 : (childExitCode ?? 70),
     standardOutput: standardOutput,
-    standardError: standardError
+    standardError: standardError,
+    timedOut: timedOut,
+    timeoutSeconds: timeout
   )
 }
 
@@ -254,6 +390,16 @@ func abbreviated(_ value: String, limit: Int = 2_000) -> String {
   return String(clean[..<end]) + "…"
 }
 
+func timeoutFailureDescription(_ result: ProcessResult) -> String {
+  let prefix = "Timed out after \(result.timeoutSeconds) seconds."
+  let captured = [result.standardError, result.standardOutput]
+    .map(trimmed)
+    .filter { !$0.isEmpty }
+    .joined(separator: "\n")
+  guard !captured.isEmpty else { return prefix }
+  return "\(prefix) Captured output: \(abbreviated(captured))"
+}
+
 func mcpReportedError(_ output: String) -> Bool {
   guard
     let data = output.data(using: .utf8),
@@ -262,6 +408,19 @@ func mcpReportedError(_ output: String) -> Bool {
     return true
   }
   return envelope.isError == true
+}
+
+func mcpText(_ output: String) -> String? {
+  guard
+    let data = output.data(using: .utf8),
+    let envelope = try? JSONDecoder().decode(MCPEnvelope.self, from: data)
+  else {
+    return nil
+  }
+  return envelope.content?
+    .filter { $0.type == "text" }
+    .compactMap(\.text)
+    .joined(separator: "\n")
 }
 
 func simulatorID(
@@ -279,7 +438,7 @@ func simulatorID(
 
   let tail = output[headerRange.upperBound...]
   let sectionEnd = tail
-    .range(of: "\n\ncom.apple.CoreSimulator.SimRuntime.")?
+    .range(of: "\ncom.apple.CoreSimulator.SimRuntime.")?
     .lowerBound ?? tail.endIndex
   let section = String(tail[..<sectionEnd])
   let escapedName = NSRegularExpression.escapedPattern(for: simulator)
@@ -323,7 +482,9 @@ func inspectEnvironment(
         CheckResult(
           name: name,
           expected: expected,
-          actual: actual(result),
+          actual: result.timedOut
+            ? timeoutFailureDescription(result)
+            : actual(result),
           passed: result.exitCode == 0 && evaluate(result)
         )
       )
@@ -442,24 +603,33 @@ func inspectEnvironment(
       guard !mcpReportedError(result.standardOutput) else {
         return false
       }
+      guard let list = mcpText(result.standardOutput) else {
+        return false
+      }
       return simulatorID(
-        in: result.standardOutput,
+        in: list,
         runtime: profile.runtime,
         simulator: profile.simulator
       ) != nil
     },
     actual: { result in
-      simulatorID(
-        in: result.standardOutput,
+      let list = mcpText(result.standardOutput) ?? ""
+      if let identifier = simulatorID(
+        in: list,
         runtime: profile.runtime,
         simulator: profile.simulator
-      ).map {
-        "iOS \(profile.runtime) / \(profile.simulator) / \($0)"
-      } ?? abbreviated(result.standardError + result.standardOutput, limit: 500)
+      ) {
+        return "iOS \(profile.runtime) / \(profile.simulator) / \(identifier)"
+      }
+      if list.isEmpty {
+        return abbreviated(result.standardError + result.standardOutput, limit: 500)
+      }
+      return "No \(profile.simulator) found in iOS \(profile.runtime) runtime."
     }
   ) {
+    let list = mcpText(listResult.standardOutput) ?? ""
     resolvedSimulatorID = simulatorID(
-      in: listResult.standardOutput,
+      in: list,
       runtime: profile.runtime,
       simulator: profile.simulator
     )
@@ -477,7 +647,7 @@ func prepareWorkspace(repositoryRoot: URL) throws -> URL {
     .appendingPathComponent(
       ".swiftpm/xcode/package.xcworkspace",
       isDirectory: true
-    )
+  )
   let contents = workspace.appendingPathComponent("contents.xcworkspacedata")
   let xml = """
   <?xml version="1.0" encoding="UTF-8"?>
@@ -557,9 +727,30 @@ func failureReason(for checks: [CheckResult]) -> String? {
   return "Failed environment checks: " + names.joined(separator: ", ")
 }
 
+let options: Options
 do {
-  let options = try parseOptions(Array(CommandLine.arguments.dropFirst()))
+  options = try parseOptions(Array(CommandLine.arguments.dropFirst()))
+} catch let error as VerifyError {
+  switch error {
+  case .usage:
+    emit(UsageResult(failureReason: error.description), exitCode: 64)
+  case .process, .file:
+    preconditionFailure(
+      "Option parsing emitted a non-usage error: \(error.description)"
+    )
+  }
+} catch {
+  emit(
+    UsageResult(failureReason: error.localizedDescription, exitCode: 64),
+    exitCode: 64
+  )
+}
 
+var failureChecks: [CheckResult] = []
+var failureCommands: [[String]] = []
+var failureArtifactPaths: [String] = []
+
+do {
   switch options.command {
   case .environment:
     let profile = options.profile!
@@ -567,6 +758,8 @@ do {
       profile: profile,
       repositoryRoot: repositoryRoot
     )
+    failureChecks = inspection.checks
+    failureCommands = inspection.commands
     let reason = failureReason(for: inspection.checks)
     let result = VerificationResult(
       schemaVersion: 1,
@@ -583,14 +776,21 @@ do {
     emit(result, exitCode: result.exitCode)
 
   case .host:
+    failureCommands = [["/usr/bin/swift", "test"]]
     let process = try run(
       "/usr/bin/swift",
       ["test"],
-      currentDirectory: repositoryRoot
+      currentDirectory: repositoryRoot,
+      timeout: 300
     )
+    failureCommands = [process.command]
     let reason = process.exitCode == 0
       ? nil
-      : abbreviated(process.standardError + process.standardOutput)
+      : (
+        process.timedOut
+          ? timeoutFailureDescription(process)
+          : abbreviated(process.standardError + process.standardOutput)
+      )
     let result = VerificationResult(
       schemaVersion: 1,
       command: .host,
@@ -611,6 +811,8 @@ do {
       profile: profile,
       repositoryRoot: repositoryRoot
     )
+    failureChecks = inspection.checks
+    failureCommands = inspection.commands
     if let reason = failureReason(for: inspection.checks) {
       let result = VerificationResult(
         schemaVersion: 1,
@@ -634,24 +836,27 @@ do {
     }
     _ = try prepareWorkspace(repositoryRoot: repositoryRoot)
 
+    let testArguments = [
+      "xcodebuildmcp",
+      "simulator",
+      "test",
+      "--workspace-path",
+      ".swiftpm/xcode/package.xcworkspace",
+      "--scheme",
+      "SteadyUI",
+      "--simulator-id",
+      simulatorID,
+      "--configuration",
+      "Debug",
+      "--output",
+      "json",
+    ]
+    failureCommands.append(["/usr/bin/env"] + testArguments)
     let test = try run(
       "/usr/bin/env",
-      [
-        "xcodebuildmcp",
-        "simulator",
-        "test",
-        "--workspace-path",
-        ".swiftpm/xcode/package.xcworkspace",
-        "--scheme",
-        "SteadyUI",
-        "--simulator-id",
-        simulatorID,
-        "--configuration",
-        "Debug",
-        "--output",
-        "json",
-      ],
-      currentDirectory: repositoryRoot
+      testArguments,
+      currentDirectory: repositoryRoot,
+      timeout: 900
     )
     let outputData = Data(test.standardOutput.utf8)
     let artifactPath = try writeArtifact(
@@ -659,6 +864,7 @@ do {
       profile: profile,
       repositoryRoot: repositoryRoot
     )
+    failureArtifactPaths = [artifactPath]
     let reportedError = mcpReportedError(test.standardOutput)
     let effectiveExitCode: Int32 = test.exitCode != 0
       ? test.exitCode
@@ -666,7 +872,9 @@ do {
     let reason: String? = effectiveExitCode == 0
       ? nil
       : (
-        trimmed(test.standardError).isEmpty
+        test.timedOut
+          ? timeoutFailureDescription(test)
+          : trimmed(test.standardError).isEmpty
           ? "XcodeBuildMCP reported a test failure."
           : abbreviated(test.standardError)
       )
@@ -685,19 +893,31 @@ do {
     emit(result, exitCode: result.exitCode)
   }
 } catch let error as VerifyError {
-  switch error {
-  case .usage:
-    emit(UsageResult(failureReason: error.description), exitCode: 64)
-  case .process, .file:
-    let result = UsageResult(
-      failureReason: error.description,
-      exitCode: 70
-    )
-    emit(result, exitCode: 70)
-  }
-} catch {
-  emit(
-    UsageResult(failureReason: error.localizedDescription, exitCode: 70),
-    exitCode: 70
+  let result = VerificationResult(
+    schemaVersion: 1,
+    command: options.command,
+    profile: options.profile,
+    isGate: options.command != .host,
+    status: "failed",
+    exitCode: 70,
+    checks: failureChecks,
+    executedCommands: failureCommands,
+    failureReason: error.description,
+    artifactPaths: failureArtifactPaths
   )
+  emit(result, exitCode: result.exitCode)
+} catch {
+  let result = VerificationResult(
+    schemaVersion: 1,
+    command: options.command,
+    profile: options.profile,
+    isGate: options.command != .host,
+    status: "failed",
+    exitCode: 70,
+    checks: failureChecks,
+    executedCommands: failureCommands,
+    failureReason: error.localizedDescription,
+    artifactPaths: failureArtifactPaths
+  )
+  emit(result, exitCode: result.exitCode)
 }

@@ -128,7 +128,7 @@ xcodebuildmcp simulator test \
   --output json
 ```
 
-스크립트는 XcodeBuildMCP의 프로세스 종료 상태와 JSON envelope의 `isError`를 함께 검사한다. 프로세스가 0으로 끝나도 `isError: true`이면 검증 실패로 반환하고, 성공 또는 실패를 숨기지 않는다.
+스크립트는 XcodeBuildMCP의 프로세스 종료 상태와 JSON envelope의 `isError`를 함께 검사한다. 프로세스가 0으로 끝나도 `isError: true`이면 검증 실패로 반환하고, 성공 또는 실패를 숨기지 않는다. 명령마다 기한을 두고 만료된 자식 프로세스를 종료한 뒤, 그때까지 캡처한 stdout과 stderr를 구조화된 실패 결과에 보존한다.
 
 ### JSON 결과
 
@@ -189,7 +189,9 @@ GitHub의 macOS 26 호스티드 이미지에는 Xcode 26.4.1과 iOS 26.x 런타�
 - 환경 불일치와 제품 테스트 실패를 별도 검사 결과로 구분한다.
 - 필요한 Xcode, SDK, CLI, runtime, simulator가 없으면 누락된 기대값과 실제 발견값을 출력한다.
 - 워크스페이스 생성에 실패하면 테스트를 실행하지 않고 대상 경로와 파일 시스템 오류를 기록한다.
-- 하위 프로세스 실행에 실패하면 실행한 명령, 종료 코드, 표준 오류 요약을 보존한다. XcodeBuildMCP JSON의 `isError: true`도 실패로 취급한다.
+- 하위 프로세스 실행 실패나 timeout이면 실행한 명령, 종료 코드, 캡처한 출력 요약을 보존한다. XcodeBuildMCP JSON의 `isError: true`도 실패로 취급한다.
+- timeout은 명령의 독립 프로세스 그룹 전체에 SIGTERM을 보내고 유예 후 SIGKILL을 보내 하위 프로세스를 남기지 않는다.
+- 옵션 파싱 실패에만 usage 스키마를 사용한다. 프로세스 또는 파일 실패는 요청 command, profile, gate 여부, 누적 checks, 실행 명령, artifact 경로를 포함한 검증 결과 스키마를 유지한다.
 - `host` 실패는 iOS 게이트 상태에 영향을 주지 않는다.
 - CI는 실패한 실행에서도 JSON을 artifact로 업로드해 원인 추적이 가능해야 한다.
 

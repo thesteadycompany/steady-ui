@@ -60,7 +60,7 @@ Expected: 두 명령 모두 exit 0.
 
 - [ ] **Step 2: ROADMAP.md 상단과 상태 계약을 작성한다**
 
-~~~~markdown
+~~~~~markdown
 # SteadyUI Roadmap
 
 ~~~~yaml
@@ -73,7 +73,7 @@ owner: repository-maintainer
 ~~~~
 
 허용 상태는 planned, ready, in_progress, blocked, done, deferred다. 모든 depends_on이 done일 때만 ready가 될 수 있고, 검증 결과가 evidence에 기록된 경우에만 done이 될 수 있다.
-~~~~
+~~~~~
 
 - [ ] **Step 3: SU-001을 전체 필드로 작성한다**
 
@@ -326,6 +326,8 @@ git commit -m "test: establish iOS package contracts"
 
 **Files:**
 - Create: Scripts/verify
+- Create: Scripts/test-verify
+- Create: Tests/VerificationFixtures/xcodebuildmcp
 
 **Interfaces:**
 - Consumes: xcodebuild, swift, xcrun, xcodebuildmcp, Package.swift, MobileExample project
@@ -392,11 +394,12 @@ Parser rules:
 func run(
   _ executable: String,
   _ arguments: [String],
-  currentDirectory: URL
+  currentDirectory: URL,
+  timeout: TimeInterval
 ) throws -> ProcessResult
 ~~~~
 
-/usr/bin/xcodebuild, /usr/bin/swift, /usr/bin/xcrun을 절대 경로로 실행하고 XcodeBuildMCP는 /usr/bin/env xcodebuildmcp로 실행한다. 긴 Xcode 출력이 Pipe를 채우지 않도록 stdout/stderr를 FileManager.default.temporaryDirectory 아래의 서로 다른 임시 파일에 연결한다. waitUntilExit 후 handle을 닫고 UTF-8로 읽으며 defer에서 임시 디렉터리를 제거한다. Process.run 오류에는 전체 명령과 Foundation 오류를 포함한다.
+/usr/bin/xcodebuild, /usr/bin/swift, /usr/bin/xcrun을 절대 경로로 실행하고 XcodeBuildMCP는 /usr/bin/env xcodebuildmcp로 실행한다. 긴 Xcode 출력이 Pipe를 채우지 않도록 stdout/stderr를 FileManager.default.temporaryDirectory 아래의 서로 다른 임시 파일에 연결한다. posix_spawn으로 명령마다 독립 프로세스 그룹을 만들고 기한 만료 시 그룹 전체에 SIGTERM, 유예 후 SIGKILL을 보낸다. 그 뒤 handle을 닫고 보존된 stdout/stderr를 UTF-8로 읽으며 defer에서 임시 디렉터리를 제거한다. timeout은 exit 124의 구조화된 실패로 반환하고 launch 오류에는 전체 명령과 POSIX 오류를 포함한다.
 
 - [ ] **Step 4: 환경 검사와 runtime별 UDID 해석을 작성한다**
 
@@ -423,7 +426,7 @@ func inspectEnvironment(
 | mobile_example_deployment_targets | PBX regex | 네 값 모두 18.0 |
 | simulator | XcodeBuildMCP list의 runtime 구간 | 프로필 device와 UUID |
 
-UDID helper는 runtime header com.apple.CoreSimulator.SimRuntime.iOS-18-5: 또는 iOS-26-4: 뒤부터 다음 runtime header 전까지만 검색한다. 그 구간에서 정규식 - DEVICE_NAME \\(([0-9A-Fa-f-]{36})\\)의 capture를 반환한다. 전체 출력에서 device 이름과 runtime을 독립적으로 검색하지 않는다.
+XcodeBuildMCP JSON envelope의 text content를 먼저 디코딩한다. UDID helper는 runtime header com.apple.CoreSimulator.SimRuntime.iOS-18-5: 또는 iOS-26-4: 뒤부터 한 개 이상의 개행으로 시작하는 가장 이른 다음 runtime header 전까지만 검색한다. 그 구간에서 정규식 - DEVICE_NAME \\(([0-9A-Fa-f-]{36})\\)의 capture를 반환한다. 전체 출력에서 device 이름과 runtime을 독립적으로 검색하지 않는다.
 
 - [ ] **Step 5: environment 성공과 parser 실패를 검증한다**
 
@@ -497,6 +500,8 @@ let arguments = [
 
 원본 stdout을 .build/verification/xcodebuildmcp-minimum.json 또는 xcodebuildmcp-ci.json에 atomic write하고 artifactPaths에 상대 경로를 넣는다. child exit code가 0이어도 XcodeBuildMCP JSON envelope의 isError가 true이면 effective exit code 1로 실패시키며, 그 외 child exit code도 숨기지 않는다.
 
+옵션 파싱 실패만 UsageResult를 사용한다. 프로세스 시작 또는 파일 쓰기 실패는 선택한 command, profile, isGate와 실패 전까지 누적한 checks, executedCommands, artifactPaths를 담은 VerificationResult를 반환한다.
+
 - [ ] **Step 8: 무시된 workspace를 제거한 상태에서 minimum을 검증한다**
 
 ~~~~bash
@@ -567,10 +572,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
       - name: Install XcodeBuildMCP 2.1.0
         run: npm install --global xcodebuildmcp@2.1.0
+      - name: Test verification script
+        run: ./Scripts/test-verify
       - name: Verify iOS package
         run: |
           mkdir -p .build/verification
@@ -589,7 +598,7 @@ jobs:
 
 ~~~~bash
 ruby -e 'require "yaml"; YAML.load_file(".github/workflows/verify.yml")'
-rg -n 'macos-26|Xcode_26\.4\.1|xcodebuildmcp@2\.1\.0|Scripts/verify ios --profile ci|if: always' .github/workflows/verify.yml
+rg -n 'macos-26|Xcode_26\.4\.1|xcodebuildmcp@2\.1\.0|Scripts/test-verify|Scripts/verify ios --profile ci|if: always' .github/workflows/verify.yml
 ~~~~
 
 Expected: YAML parse exit 0, 모든 고정값 발견.

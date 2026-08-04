@@ -1,0 +1,34 @@
+#!/bin/bash
+set -eu
+
+if [[ "${1:-}" == "--version" ]]; then
+  printf '%s\n' '2.1.0'
+  exit 0
+fi
+
+if [[ "${1:-}" == "simulator" && "${2:-}" == "list" ]]; then
+  case "${STEADY_FAKE_MODE:-valid}" in
+    boundary)
+      printf '%s\n' '{"content":[{"type":"text","text":"Available iOS Simulators:\n\ncom.apple.CoreSimulator.SimRuntime.iOS-18-5:\n- iPhone SE (3rd generation) (D522C93C-E590-4FB2-B63C-615749B2FABD)\ncom.apple.CoreSimulator.SimRuntime.iOS-26-4:\n- iPhone 16 Pro (AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE)\n"}]}'
+      ;;
+    timeout)
+      printf '%s\n' 'captured-before-timeout' >&2
+      trap '' TERM
+      sleep 30 &
+      child_pid=$!
+      printf '%s\n' "$child_pid" > "$STEADY_FAKE_CHILD_PID_FILE"
+      wait "$child_pid"
+      ;;
+    valid)
+      printf '%s\n' '{"content":[{"type":"text","text":"Available iOS Simulators:\n\ncom.apple.CoreSimulator.SimRuntime.iOS-18-5:\n- iPhone 16 Pro (D522C93C-E590-4FB2-B63C-615749B2FABD)\n"}]}'
+      ;;
+    *)
+      printf '%s\n' '{"content":[{"type":"text","text":"unsupported fake mode"}],"isError":true}'
+      exit 1
+      ;;
+  esac
+  exit 0
+fi
+
+printf '%s\n' '{"content":[{"type":"text","text":"unexpected fake invocation"}],"isError":true}'
+exit 1

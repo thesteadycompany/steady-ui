@@ -18,12 +18,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Select Xcode 26.4.1
         run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
 
       - name: Install XcodeBuildMCP 2.1.0
         run: npm install --global xcodebuildmcp@2.1.0
+
+      - name: Test verification script
+        run: ./Scripts/test-verify
 
       - name: Verify iOS package
         run: |
