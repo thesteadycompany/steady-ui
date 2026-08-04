@@ -416,7 +416,7 @@ func inspectEnvironment(
 | name | source | expected |
 | --- | --- | --- |
 | xcode | xcodebuild -version 첫 줄 | Xcode 26.4.1 |
-| swift | swift --version 첫 줄 | Apple Swift version 6.3.1 포함 |
+| swift | swift --version 전체 출력 | Apple Swift version 6.3.1 포함 |
 | ios_simulator_sdk | xcrun --sdk iphonesimulator --show-sdk-version | 26.4 |
 | xcodebuildmcp | xcodebuildmcp --version | 2.1.0 |
 | package_deployment_target | Package.swift | .iOS(.v18) 한 번 |
@@ -432,7 +432,7 @@ UDID helper는 runtime header com.apple.CoreSimulator.SimRuntime.iOS-18-5: 또�
 ~~~~bash
 chmod +x Scripts/verify
 ./Scripts/verify environment --profile minimum --output json > /private/tmp/steady-ui-environment.json
-plutil -lint /private/tmp/steady-ui-environment.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-environment.json
 ~~~~
 
 Expected: exit 0, JSON OK, iOS 18.5 iPhone 16 Pro UUID 포함.
@@ -449,7 +449,7 @@ Expected: exit 64, stdout는 유효한 JSON이고 허용 프로필을 설명한�
 
 ~~~~bash
 ./Scripts/verify host --output json > /private/tmp/steady-ui-host.json
-plutil -lint /private/tmp/steady-ui-host.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-host.json
 ~~~~
 
 Expected: 실제 swift test 결과와 무관하게 stdout JSON은 유효하고 is_gate는 false다.
@@ -495,7 +495,7 @@ let arguments = [
 ]
 ~~~~
 
-원본 stdout을 .build/verification/xcodebuildmcp-minimum.json 또는 xcodebuildmcp-ci.json에 atomic write하고 artifactPaths에 상대 경로를 넣는다. child exit code를 숨기지 않는다.
+원본 stdout을 .build/verification/xcodebuildmcp-minimum.json 또는 xcodebuildmcp-ci.json에 atomic write하고 artifactPaths에 상대 경로를 넣는다. child exit code가 0이어도 XcodeBuildMCP JSON envelope의 isError가 true이면 effective exit code 1로 실패시키며, 그 외 child exit code도 숨기지 않는다.
 
 - [ ] **Step 8: 무시된 workspace를 제거한 상태에서 minimum을 검증한다**
 
@@ -503,8 +503,8 @@ let arguments = [
 mv .swiftpm/xcode/package.xcworkspace /private/tmp/steady-ui-package.xcworkspace
 ./Scripts/verify ios --profile minimum --output json > /private/tmp/steady-ui-ios-minimum.json
 test -f .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-plutil -lint /private/tmp/steady-ui-ios-minimum.json
-plutil -lint .build/verification/xcodebuildmcp-minimum.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-ios-minimum.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' .build/verification/xcodebuildmcp-minimum.json
 ~~~~
 
 Expected: workspace 재생성, 네 테스트 PASS, 두 JSON 유효.
@@ -627,7 +627,7 @@ Expected: 환경 4개와 공개 명령 4개 모두 발견.
 
 ~~~~bash
 ./Scripts/verify ios --profile minimum --output json > /private/tmp/steady-ui-ios-after-docs.json
-plutil -lint /private/tmp/steady-ui-ios-after-docs.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-ios-after-docs.json
 ~~~~
 
 Expected: exit 0, JSON valid, 네 테스트 PASS.
@@ -678,8 +678,8 @@ Run from the extracted directory:
 test ! -e .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 ./Scripts/verify ios --profile minimum --output json > verification-minimum.json
 test -f .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-plutil -lint verification-minimum.json
-plutil -lint .build/verification/xcodebuildmcp-minimum.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' verification-minimum.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' .build/verification/xcodebuildmcp-minimum.json
 ~~~~
 
 Expected: workspace 생성, 네 테스트 PASS, JSON 유효.
@@ -752,8 +752,8 @@ Expected: 설계/계획 문서와 계획에 열거한 파일만 표시되고 Sou
 ~~~~bash
 ./Scripts/verify environment --profile minimum --output json > /private/tmp/steady-ui-final-environment.json
 ./Scripts/verify ios --profile minimum --output json > /private/tmp/steady-ui-final-ios.json
-plutil -lint /private/tmp/steady-ui-final-environment.json
-plutil -lint /private/tmp/steady-ui-final-ios.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-final-environment.json
+ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' /private/tmp/steady-ui-final-ios.json
 git diff --check origin/main...HEAD
 ~~~~
 

@@ -1,0 +1,703 @@
+#!/usr/bin/env swift
+
+import Foundation
+
+enum VerifyCommand: String, Codable {
+  case environment
+  case host
+  case ios
+}
+
+enum VerifyProfile: String, Codable {
+  case minimum
+  case ci
+
+  var runtime: String {
+    switch self {
+    case .minimum:
+      "18.5"
+    case .ci:
+      "26.4"
+    }
+  }
+
+  var simulator: String {
+    switch self {
+    case .minimum:
+      "iPhone 16 Pro"
+    case .ci:
+      "iPhone 17 Pro"
+    }
+  }
+}
+
+struct CheckResult: Codable {
+  let name: String
+  let expected: String
+  let actual: String
+  let passed: Bool
+}
+
+struct VerificationResult: Codable {
+  let schemaVersion: Int
+  let command: VerifyCommand
+  let profile: VerifyProfile?
+  let isGate: Bool
+  let status: String
+  let exitCode: Int32
+  let checks: [CheckResult]
+  let executedCommands: [[String]]
+  let failureReason: String?
+  let artifactPaths: [String]
+}
+
+struct UsageResult: Encodable {
+  let schemaVersion: Int
+  let status: String
+  let exitCode: Int32
+  let failureReason: String
+  let usage: String
+
+  init(failureReason: String, exitCode: Int32 = 64) {
+    self.schemaVersion = 1
+    self.status = "failed"
+    self.exitCode = exitCode
+    self.failureReason = failureReason
+    self.usage = "./Scripts/verify environment|ios --profile minimum|ci --output json; ./Scripts/verify host --output json"
+  }
+}
+
+struct ProcessResult {
+  let command: [String]
+  let exitCode: Int32
+  let standardOutput: String
+  let standardError: String
+}
+
+struct Options {
+  let command: VerifyCommand
+  let profile: VerifyProfile?
+}
+
+struct EnvironmentInspection {
+  let checks: [CheckResult]
+  let commands: [[String]]
+  let simulatorID: String?
+}
+
+struct MCPEnvelope: Decodable {
+  let isError: Bool?
+}
+
+enum VerifyError: Error, CustomStringConvertible {
+  case usage(String)
+  case process(String)
+  case file(String)
+
+  var description: String {
+    switch self {
+    case let .usage(message), let .process(message), let .file(message):
+      message
+    }
+  }
+}
+
+let repositoryRoot: URL = {
+  let currentDirectory = URL(
+    fileURLWithPath: FileManager.default.currentDirectoryPath,
+    isDirectory: true
+  )
+  let script = URL(
+    fileURLWithPath: CommandLine.arguments[0],
+    relativeTo: currentDirectory
+  ).standardizedFileURL
+  return script
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+}()
+
+func parseOptions(_ arguments: [String]) throws -> Options {
+  guard let rawCommand = arguments.first else {
+    throw VerifyError.usage("Missing command.")
+  }
+  guard let command = VerifyCommand(rawValue: rawCommand) else {
+    throw VerifyError.usage("Unsupported command '\(rawCommand)'.")
+  }
+
+  var profile: VerifyProfile?
+  var output: String?
+  var index = 1
+
+  while index < arguments.count {
+    let flag = arguments[index]
+    guard index + 1 < arguments.count else {
+      throw VerifyError.usage("Missing value for '\(flag)'.")
+    }
+    let value = arguments[index + 1]
+
+    switch flag {
+    case "--profile":
+      guard profile == nil else {
+        throw VerifyError.usage("The --profile option may be supplied only once.")
+      }
+      guard let parsed = VerifyProfile(rawValue: value) else {
+        throw VerifyError.usage(
+          "Unsupported profile '\(value)'; expected 'minimum' or 'ci'."
+        )
+      }
+      profile = parsed
+    case "--output":
+      guard output == nil else {
+        throw VerifyError.usage("The --output option may be supplied only once.")
+      }
+      guard value == "json" else {
+        throw VerifyError.usage("Unsupported output '\(value)'; expected 'json'.")
+      }
+      output = value
+    default:
+      throw VerifyError.usage("Unsupported option '\(flag)'.")
+    }
+
+    index += 2
+  }
+
+  guard output == "json" else {
+    throw VerifyError.usage("The --output json option is required.")
+  }
+
+  switch command {
+  case .environment, .ios:
+    guard profile != nil else {
+      throw VerifyError.usage(
+        "The \(command.rawValue) command requires --profile minimum|ci."
+      )
+    }
+  case .host:
+    guard profile == nil else {
+      throw VerifyError.usage("The host command does not accept --profile.")
+    }
+  }
+
+  return Options(command: command, profile: profile)
+}
+
+func run(
+  _ executable: String,
+  _ arguments: [String],
+  currentDirectory: URL
+) throws -> ProcessResult {
+  let fileManager = FileManager.default
+  let captureDirectory = fileManager.temporaryDirectory
+    .appendingPathComponent("steady-ui-verify-\(UUID().uuidString)", isDirectory: true)
+  try fileManager.createDirectory(
+    at: captureDirectory,
+    withIntermediateDirectories: true
+  )
+  defer {
+    try? fileManager.removeItem(at: captureDirectory)
+  }
+
+  let standardOutputURL = captureDirectory.appendingPathComponent("stdout")
+  let standardErrorURL = captureDirectory.appendingPathComponent("stderr")
+  fileManager.createFile(atPath: standardOutputURL.path, contents: nil)
+  fileManager.createFile(atPath: standardErrorURL.path, contents: nil)
+
+  let standardOutputHandle = try FileHandle(forWritingTo: standardOutputURL)
+  let standardErrorHandle = try FileHandle(forWritingTo: standardErrorURL)
+  let process = Process()
+  process.executableURL = URL(fileURLWithPath: executable)
+  process.arguments = arguments
+  process.currentDirectoryURL = currentDirectory
+  process.standardOutput = standardOutputHandle
+  process.standardError = standardErrorHandle
+
+  do {
+    try process.run()
+  } catch {
+    try? standardOutputHandle.close()
+    try? standardErrorHandle.close()
+    let command = ([executable] + arguments).joined(separator: " ")
+    throw VerifyError.process(
+      "Failed to launch '\(command)': \(error.localizedDescription)"
+    )
+  }
+
+  process.waitUntilExit()
+  try standardOutputHandle.close()
+  try standardErrorHandle.close()
+
+  let standardOutput = String(
+    data: try Data(contentsOf: standardOutputURL),
+    encoding: .utf8
+  ) ?? ""
+  let standardError = String(
+    data: try Data(contentsOf: standardErrorURL),
+    encoding: .utf8
+  ) ?? ""
+
+  return ProcessResult(
+    command: [executable] + arguments,
+    exitCode: process.terminationStatus,
+    standardOutput: standardOutput,
+    standardError: standardError
+  )
+}
+
+func trimmed(_ value: String) -> String {
+  value.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+func abbreviated(_ value: String, limit: Int = 2_000) -> String {
+  let clean = trimmed(value)
+  guard clean.count > limit else { return clean }
+  let end = clean.index(clean.startIndex, offsetBy: limit)
+  return String(clean[..<end]) + "…"
+}
+
+func mcpReportedError(_ output: String) -> Bool {
+  guard
+    let data = output.data(using: .utf8),
+    let envelope = try? JSONDecoder().decode(MCPEnvelope.self, from: data)
+  else {
+    return true
+  }
+  return envelope.isError == true
+}
+
+func simulatorID(
+  in output: String,
+  runtime: String,
+  simulator: String
+) -> String? {
+  let runtimeHeader =
+    "com.apple.CoreSimulator.SimRuntime.iOS-" +
+    runtime.replacingOccurrences(of: ".", with: "-") +
+    ":"
+  guard let headerRange = output.range(of: runtimeHeader) else {
+    return nil
+  }
+
+  let tail = output[headerRange.upperBound...]
+  let sectionEnd = tail
+    .range(of: "\n\ncom.apple.CoreSimulator.SimRuntime.")?
+    .lowerBound ?? tail.endIndex
+  let section = String(tail[..<sectionEnd])
+  let escapedName = NSRegularExpression.escapedPattern(for: simulator)
+  let pattern = "- \(escapedName) \\(([0-9A-Fa-f-]{36})\\)"
+  guard let regex = try? NSRegularExpression(pattern: pattern) else {
+    return nil
+  }
+  let range = NSRange(section.startIndex..., in: section)
+  guard
+    let match = regex.firstMatch(in: section, range: range),
+    let identifierRange = Range(match.range(at: 1), in: section)
+  else {
+    return nil
+  }
+  return String(section[identifierRange])
+}
+
+func inspectEnvironment(
+  profile: VerifyProfile,
+  repositoryRoot: URL
+) -> EnvironmentInspection {
+  var checks: [CheckResult] = []
+  var commands: [[String]] = []
+
+  func commandCheck(
+    name: String,
+    expected: String,
+    executable: String,
+    arguments: [String],
+    evaluate: (ProcessResult) -> Bool,
+    actual: (ProcessResult) -> String
+  ) -> ProcessResult? {
+    do {
+      let result = try run(
+        executable,
+        arguments,
+        currentDirectory: repositoryRoot
+      )
+      commands.append(result.command)
+      checks.append(
+        CheckResult(
+          name: name,
+          expected: expected,
+          actual: actual(result),
+          passed: result.exitCode == 0 && evaluate(result)
+        )
+      )
+      return result
+    } catch {
+      commands.append([executable] + arguments)
+      checks.append(
+        CheckResult(
+          name: name,
+          expected: expected,
+          actual: String(describing: error),
+          passed: false
+        )
+      )
+      return nil
+    }
+  }
+
+  _ = commandCheck(
+    name: "xcode",
+    expected: "Xcode 26.4.1",
+    executable: "/usr/bin/xcodebuild",
+    arguments: ["-version"],
+    evaluate: { $0.standardOutput.split(separator: "\n").first == "Xcode 26.4.1" },
+    actual: { trimmed($0.standardOutput).split(separator: "\n").first.map(String.init) ?? "" }
+  )
+
+  _ = commandCheck(
+    name: "swift",
+    expected: "Apple Swift version 6.3.1",
+    executable: "/usr/bin/swift",
+    arguments: ["--version"],
+    evaluate: { $0.standardOutput.contains("Apple Swift version 6.3.1") },
+    actual: { abbreviated($0.standardOutput, limit: 500) }
+  )
+
+  _ = commandCheck(
+    name: "ios_simulator_sdk",
+    expected: "26.4",
+    executable: "/usr/bin/xcrun",
+    arguments: ["--sdk", "iphonesimulator", "--show-sdk-version"],
+    evaluate: { trimmed($0.standardOutput) == "26.4" },
+    actual: { trimmed($0.standardOutput) }
+  )
+
+  _ = commandCheck(
+    name: "xcodebuildmcp",
+    expected: "2.1.0",
+    executable: "/usr/bin/env",
+    arguments: ["xcodebuildmcp", "--version"],
+    evaluate: { trimmed($0.standardOutput) == "2.1.0" },
+    actual: { trimmed($0.standardOutput) }
+  )
+
+  let packageURL = repositoryRoot.appendingPathComponent("Package.swift")
+  do {
+    let package = try String(contentsOf: packageURL, encoding: .utf8)
+    let count = package.components(separatedBy: ".iOS(.v18)").count - 1
+    checks.append(
+      CheckResult(
+        name: "package_deployment_target",
+        expected: ".iOS(.v18) exactly once",
+        actual: "\(count) match(es)",
+        passed: count == 1
+      )
+    )
+  } catch {
+    checks.append(
+      CheckResult(
+        name: "package_deployment_target",
+        expected: ".iOS(.v18) exactly once",
+        actual: error.localizedDescription,
+        passed: false
+      )
+    )
+  }
+
+  let projectURL = repositoryRoot.appendingPathComponent(
+    "Examples/MobileExample/MobileExample.xcodeproj/project.pbxproj"
+  )
+  do {
+    let project = try String(contentsOf: projectURL, encoding: .utf8)
+    let regex = try NSRegularExpression(
+      pattern: "IPHONEOS_DEPLOYMENT_TARGET = ([^;]+);"
+    )
+    let range = NSRange(project.startIndex..., in: project)
+    let values = regex.matches(in: project, range: range).compactMap { match in
+      Range(match.range(at: 1), in: project).map { String(project[$0]) }
+    }
+    checks.append(
+      CheckResult(
+        name: "mobile_example_deployment_targets",
+        expected: "four values equal to 18.0",
+        actual: values.joined(separator: ", "),
+        passed: values.count == 4 && values.allSatisfy { $0 == "18.0" }
+      )
+    )
+  } catch {
+    checks.append(
+      CheckResult(
+        name: "mobile_example_deployment_targets",
+        expected: "four values equal to 18.0",
+        actual: error.localizedDescription,
+        passed: false
+      )
+    )
+  }
+
+  var resolvedSimulatorID: String?
+  if let listResult = commandCheck(
+    name: "simulator",
+    expected: "iOS \(profile.runtime) / \(profile.simulator)",
+    executable: "/usr/bin/env",
+    arguments: ["xcodebuildmcp", "simulator", "list", "--output", "json"],
+    evaluate: { result in
+      guard !mcpReportedError(result.standardOutput) else {
+        return false
+      }
+      return simulatorID(
+        in: result.standardOutput,
+        runtime: profile.runtime,
+        simulator: profile.simulator
+      ) != nil
+    },
+    actual: { result in
+      simulatorID(
+        in: result.standardOutput,
+        runtime: profile.runtime,
+        simulator: profile.simulator
+      ).map {
+        "iOS \(profile.runtime) / \(profile.simulator) / \($0)"
+      } ?? abbreviated(result.standardError + result.standardOutput, limit: 500)
+    }
+  ) {
+    resolvedSimulatorID = simulatorID(
+      in: listResult.standardOutput,
+      runtime: profile.runtime,
+      simulator: profile.simulator
+    )
+  }
+
+  return EnvironmentInspection(
+    checks: checks,
+    commands: commands,
+    simulatorID: resolvedSimulatorID
+  )
+}
+
+func prepareWorkspace(repositoryRoot: URL) throws -> URL {
+  let workspace = repositoryRoot
+    .appendingPathComponent(
+      ".swiftpm/xcode/package.xcworkspace",
+      isDirectory: true
+    )
+  let contents = workspace.appendingPathComponent("contents.xcworkspacedata")
+  let xml = """
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Workspace
+     version = "1.0">
+     <FileRef
+        location = "self:">
+     </FileRef>
+  </Workspace>
+
+  """
+
+  do {
+    try FileManager.default.createDirectory(
+      at: workspace,
+      withIntermediateDirectories: true
+    )
+    if !FileManager.default.fileExists(atPath: contents.path) {
+      try Data(xml.utf8).write(to: contents, options: .atomic)
+    }
+  } catch {
+    throw VerifyError.file(
+      "Failed to prepare '\(contents.path)': \(error.localizedDescription)"
+    )
+  }
+  return workspace
+}
+
+func writeArtifact(
+  _ data: Data,
+  profile: VerifyProfile,
+  repositoryRoot: URL
+) throws -> String {
+  let directory = repositoryRoot
+    .appendingPathComponent(".build/verification", isDirectory: true)
+  let name = "xcodebuildmcp-\(profile.rawValue).json"
+  let destination = directory.appendingPathComponent(name)
+  do {
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true
+    )
+    try data.write(to: destination, options: .atomic)
+  } catch {
+    throw VerifyError.file(
+      "Failed to write '\(destination.path)': \(error.localizedDescription)"
+    )
+  }
+  return ".build/verification/\(name)"
+}
+
+func emit<T: Encodable>(_ value: T, exitCode: Int32) -> Never {
+  let encoder = JSONEncoder()
+  encoder.outputFormatting = [
+    .prettyPrinted,
+    .sortedKeys,
+    .withoutEscapingSlashes,
+  ]
+  encoder.keyEncodingStrategy = .convertToSnakeCase
+
+  do {
+    let data = try encoder.encode(value)
+    FileHandle.standardOutput.write(data)
+    FileHandle.standardOutput.write(Data("\n".utf8))
+  } catch {
+    let fallback =
+      #"{"schema_version":1,"status":"failed","exit_code":70,"failure_reason":"Failed to encode verification result."}"#
+    FileHandle.standardOutput.write(Data((fallback + "\n").utf8))
+    exit(70)
+  }
+  exit(exitCode)
+}
+
+func failureReason(for checks: [CheckResult]) -> String? {
+  let names = checks.filter { !$0.passed }.map(\.name)
+  guard !names.isEmpty else { return nil }
+  return "Failed environment checks: " + names.joined(separator: ", ")
+}
+
+do {
+  let options = try parseOptions(Array(CommandLine.arguments.dropFirst()))
+
+  switch options.command {
+  case .environment:
+    let profile = options.profile!
+    let inspection = inspectEnvironment(
+      profile: profile,
+      repositoryRoot: repositoryRoot
+    )
+    let reason = failureReason(for: inspection.checks)
+    let result = VerificationResult(
+      schemaVersion: 1,
+      command: .environment,
+      profile: profile,
+      isGate: true,
+      status: reason == nil ? "passed" : "failed",
+      exitCode: reason == nil ? 0 : 78,
+      checks: inspection.checks,
+      executedCommands: inspection.commands,
+      failureReason: reason,
+      artifactPaths: []
+    )
+    emit(result, exitCode: result.exitCode)
+
+  case .host:
+    let process = try run(
+      "/usr/bin/swift",
+      ["test"],
+      currentDirectory: repositoryRoot
+    )
+    let reason = process.exitCode == 0
+      ? nil
+      : abbreviated(process.standardError + process.standardOutput)
+    let result = VerificationResult(
+      schemaVersion: 1,
+      command: .host,
+      profile: nil,
+      isGate: false,
+      status: process.exitCode == 0 ? "passed" : "failed",
+      exitCode: process.exitCode,
+      checks: [],
+      executedCommands: [process.command],
+      failureReason: reason,
+      artifactPaths: []
+    )
+    emit(result, exitCode: result.exitCode)
+
+  case .ios:
+    let profile = options.profile!
+    let inspection = inspectEnvironment(
+      profile: profile,
+      repositoryRoot: repositoryRoot
+    )
+    if let reason = failureReason(for: inspection.checks) {
+      let result = VerificationResult(
+        schemaVersion: 1,
+        command: .ios,
+        profile: profile,
+        isGate: true,
+        status: "failed",
+        exitCode: 78,
+        checks: inspection.checks,
+        executedCommands: inspection.commands,
+        failureReason: reason,
+        artifactPaths: []
+      )
+      emit(result, exitCode: result.exitCode)
+    }
+
+    guard let simulatorID = inspection.simulatorID else {
+      throw VerifyError.process(
+        "The environment passed without resolving a simulator identifier."
+      )
+    }
+    _ = try prepareWorkspace(repositoryRoot: repositoryRoot)
+
+    let test = try run(
+      "/usr/bin/env",
+      [
+        "xcodebuildmcp",
+        "simulator",
+        "test",
+        "--workspace-path",
+        ".swiftpm/xcode/package.xcworkspace",
+        "--scheme",
+        "SteadyUI",
+        "--simulator-id",
+        simulatorID,
+        "--configuration",
+        "Debug",
+        "--output",
+        "json",
+      ],
+      currentDirectory: repositoryRoot
+    )
+    let outputData = Data(test.standardOutput.utf8)
+    let artifactPath = try writeArtifact(
+      outputData,
+      profile: profile,
+      repositoryRoot: repositoryRoot
+    )
+    let reportedError = mcpReportedError(test.standardOutput)
+    let effectiveExitCode: Int32 = test.exitCode != 0
+      ? test.exitCode
+      : (reportedError ? 1 : 0)
+    let reason: String? = effectiveExitCode == 0
+      ? nil
+      : (
+        trimmed(test.standardError).isEmpty
+          ? "XcodeBuildMCP reported a test failure."
+          : abbreviated(test.standardError)
+      )
+    let result = VerificationResult(
+      schemaVersion: 1,
+      command: .ios,
+      profile: profile,
+      isGate: true,
+      status: effectiveExitCode == 0 ? "passed" : "failed",
+      exitCode: effectiveExitCode,
+      checks: inspection.checks,
+      executedCommands: inspection.commands + [test.command],
+      failureReason: reason,
+      artifactPaths: [artifactPath]
+    )
+    emit(result, exitCode: result.exitCode)
+  }
+} catch let error as VerifyError {
+  switch error {
+  case .usage:
+    emit(UsageResult(failureReason: error.description), exitCode: 64)
+  case .process, .file:
+    let result = UsageResult(
+      failureReason: error.description,
+      exitCode: 70
+    )
+    emit(result, exitCode: 70)
+  }
+} catch {
+  emit(
+    UsageResult(failureReason: error.localizedDescription, exitCode: 70),
+    exitCode: 70
+  )
+}
