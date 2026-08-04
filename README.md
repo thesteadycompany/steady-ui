@@ -35,6 +35,31 @@ struct ExampleApp: App {
 }
 ```
 
+## Use Components
+
+```swift
+import SteadyUI
+import SwiftUI
+
+struct AccountStatusView: View {
+  var body: some View {
+    VStack {
+      SteadyBadge(
+        "Active",
+        role: .success,
+        emphasis: .secondary
+      )
+
+      Button("Save") {}
+        .buttonStyle(.steadyCTA)
+
+      Button("Reset") {}
+        .buttonStyle(.steadyText(.secondary))
+    }
+  }
+}
+```
+
 ## Verify Changes
 
 Run the minimum supported runtime before requesting review:

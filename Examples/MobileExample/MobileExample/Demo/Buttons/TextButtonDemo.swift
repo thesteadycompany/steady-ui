@@ -50,21 +50,21 @@ struct TextButtonDemo: View {
         } label: {
           Text("Continue")
         }
-        .buttonStyle(.text)
+        .buttonStyle(.steadyText)
 
         Button {
           lastSelection = "Secondary"
         } label: {
           Text("Maybe Later")
         }
-        .buttonStyle(.text(.secondary))
+        .buttonStyle(.steadyText(.secondary))
 
         Button {
           lastSelection = "Destructive"
         } label: {
           Text("Delete")
         }
-        .buttonStyle(.text(.destructive))
+        .buttonStyle(.steadyText(.destructive))
       }
     }
   }
@@ -78,21 +78,21 @@ struct TextButtonDemo: View {
           } label: {
             Text("Continue")
           }
-          .buttonStyle(.underline)
+          .buttonStyle(.steadyUnderline)
 
           Button {
             lastSelection = "Underline Secondary"
           } label: {
             Text("Maybe Later")
           }
-          .buttonStyle(.underline(.secondary))
+          .buttonStyle(.steadyUnderline(.secondary))
 
           Button {
             lastSelection = "Underline Destructive"
           } label: {
             Text("Delete")
           }
-          .buttonStyle(.underline(.destructive))
+          .buttonStyle(.steadyUnderline(.destructive))
         }
 
         HStack(spacing: theme.spacing.medium) {
@@ -101,21 +101,21 @@ struct TextButtonDemo: View {
           } label: {
             Text("Small")
           }
-          .buttonStyle(.underline(.primary, size: .small))
+          .buttonStyle(.steadyUnderline(.primary, size: .small))
 
           Button {
             lastSelection = "Underline Medium"
           } label: {
             Text("Medium")
           }
-          .buttonStyle(.underline)
+          .buttonStyle(.steadyUnderline)
 
           Button {
             lastSelection = "Underline Large"
           } label: {
             Text("Large")
           }
-          .buttonStyle(.underline(.primary, size: .large))
+          .buttonStyle(.steadyUnderline(.primary, size: .large))
         }
       }
     }
@@ -129,21 +129,21 @@ struct TextButtonDemo: View {
         } label: {
           Text("Small")
         }
-        .buttonStyle(.text(.primary, size: .small))
+        .buttonStyle(.steadyText(.primary, size: .small))
 
         Button {
           lastSelection = "Medium"
         } label: {
           Text("Medium")
         }
-        .buttonStyle(.text)
+        .buttonStyle(.steadyText)
 
         Button {
           lastSelection = "Large"
         } label: {
           Text("Large")
         }
-        .buttonStyle(.text(.primary, size: .large))
+        .buttonStyle(.steadyText(.primary, size: .large))
       }
     }
   }
@@ -156,14 +156,14 @@ struct TextButtonDemo: View {
         } label: {
           Text("Enabled Button")
         }
-        .buttonStyle(.text)
+        .buttonStyle(.steadyText)
 
         Button {
           lastSelection = "Disabled"
         } label: {
           Text("Disabled Button")
         }
-        .buttonStyle(.text)
+        .buttonStyle(.steadyText)
         .disabled(true)
       }
     }
@@ -177,14 +177,14 @@ struct TextButtonDemo: View {
         } label: {
           Label("Edit", systemImage: "pencil")
         }
-        .buttonStyle(.text)
+        .buttonStyle(.steadyText)
 
         Button {
           lastSelection = "Plain text"
         } label: {
           Text("Button Content")
         }
-        .buttonStyle(.text(.secondary))
+        .buttonStyle(.steadyText(.secondary))
       }
     }
   }

@@ -1,27 +1,27 @@
 import SwiftUI
 
 extension ButtonStyle where Self == SteadyTextButtonStyle {
-  public static var text: Self {
-    text(.primary)
+  public static var steadyText: Self {
+    steadyText(.primary)
   }
 
-  public static func text(
-    _ type: SteadyButtonType = .primary,
+  public static func steadyText(
+    _ variant: SteadyButtonVariant = .primary,
     size: SteadyTextButtonSize = .medium
   ) -> Self {
-    SteadyTextButtonStyle(type: type, size: size)
+    SteadyTextButtonStyle(variant: variant, size: size)
   }
 }
 
 extension ButtonStyle where Self == SteadyUnderlineTextButtonStyle {
-  public static var underline: Self {
-    underline(.primary)
+  public static var steadyUnderline: Self {
+    steadyUnderline(.primary)
   }
 
-  public static func underline(
-    _ type: SteadyButtonType = .primary,
+  public static func steadyUnderline(
+    _ variant: SteadyButtonVariant = .primary,
     size: SteadyTextButtonSize = .medium
   ) -> Self {
-    SteadyUnderlineTextButtonStyle(type: type, size: size)
+    SteadyUnderlineTextButtonStyle(variant: variant, size: size)
   }
 }

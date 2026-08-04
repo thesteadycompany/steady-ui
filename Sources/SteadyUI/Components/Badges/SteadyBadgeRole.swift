@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SteadyBadgeType: Equatable, Sendable {
+public enum SteadyBadgeRole: Equatable, Sendable {
   case info
   case success
   case warning

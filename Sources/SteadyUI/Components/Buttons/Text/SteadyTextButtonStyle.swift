@@ -3,14 +3,14 @@ import SwiftUI
 public struct SteadyTextButtonStyle: ButtonStyle {
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.theme) private var theme
-  private let type: SteadyButtonType
+  private let variant: SteadyButtonVariant
   private let size: SteadyTextButtonSize
 
   public init(
-    type: SteadyButtonType = .primary,
+    variant: SteadyButtonVariant = .primary,
     size: SteadyTextButtonSize = .medium
   ) {
-    self.type = type
+    self.variant = variant
     self.size = size
   }
 
@@ -70,7 +70,7 @@ public struct SteadyTextButtonStyle: ButtonStyle {
       return theme.colors.text.disabled
     }
 
-    switch type {
+    switch variant {
     case .primary:
       return isPressed ? theme.colors.action.primary.pressed : theme.colors.action.primary.normal
     case .secondary:
