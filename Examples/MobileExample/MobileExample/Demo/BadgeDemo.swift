@@ -30,9 +30,9 @@ struct BadgeDemo: View {
         .foregroundStyle(theme.colors.text.secondary)
 
       badgeGrid {
-        SteadyBadge("Info", type: .info)
-        SteadyBadge("Success", type: .success, style: .secondary)
-        SteadyBadge("Neutral", type: .neutral, style: .secondary)
+        SteadyBadge("Info", role: .info)
+        SteadyBadge("Success", role: .success, emphasis: .secondary)
+        SteadyBadge("Neutral", role: .neutral, emphasis: .secondary)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,8 +48,8 @@ struct BadgeDemo: View {
   private var stylesSection: some View {
     demoSection("Styles") {
       badgeGrid {
-        SteadyBadge("Primary", type: .info, style: .primary)
-        SteadyBadge("Secondary", type: .info, style: .secondary)
+        SteadyBadge("Primary", role: .info, emphasis: .primary)
+        SteadyBadge("Secondary", role: .info, emphasis: .secondary)
       }
     }
   }
@@ -69,19 +69,19 @@ struct BadgeDemo: View {
     demoSection("Semantic Colors") {
       VStack(alignment: .leading, spacing: theme.spacing.medium) {
         badgeGrid {
-          SteadyBadge("Info", type: .info)
-          SteadyBadge("Success", type: .success)
-          SteadyBadge("Warning", type: .warning)
-          SteadyBadge("Critical", type: .critical)
-          SteadyBadge("Neutral", type: .neutral)
+          SteadyBadge("Info", role: .info)
+          SteadyBadge("Success", role: .success)
+          SteadyBadge("Warning", role: .warning)
+          SteadyBadge("Critical", role: .critical)
+          SteadyBadge("Neutral", role: .neutral)
         }
 
         badgeGrid {
-          SteadyBadge("Info", type: .info, style: .secondary)
-          SteadyBadge("Success", type: .success, style: .secondary)
-          SteadyBadge("Warning", type: .warning, style: .secondary)
-          SteadyBadge("Critical", type: .critical, style: .secondary)
-          SteadyBadge("Neutral", type: .neutral, style: .secondary)
+          SteadyBadge("Info", role: .info, emphasis: .secondary)
+          SteadyBadge("Success", role: .success, emphasis: .secondary)
+          SteadyBadge("Warning", role: .warning, emphasis: .secondary)
+          SteadyBadge("Critical", role: .critical, emphasis: .secondary)
+          SteadyBadge("Neutral", role: .neutral, emphasis: .secondary)
         }
       }
     }

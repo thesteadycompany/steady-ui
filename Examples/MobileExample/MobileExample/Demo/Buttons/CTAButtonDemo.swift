@@ -48,21 +48,21 @@ struct CTAButtonDemo: View {
         } label: {
           Text("Continue")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.steadyCTA)
 
         Button {
           lastSelection = "Secondary"
         } label: {
           Text("Maybe Later")
         }
-        .buttonStyle(.cta(.secondary))
+        .buttonStyle(.steadyCTA(.secondary))
 
         Button {
           lastSelection = "Destructive"
         } label: {
           Text("Delete")
         }
-        .buttonStyle(.cta(.destructive))
+        .buttonStyle(.steadyCTA(.destructive))
       }
     }
   }
@@ -75,14 +75,14 @@ struct CTAButtonDemo: View {
         } label: {
           Text("Enabled Button")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.steadyCTA)
 
         Button {
           lastSelection = "Disabled"
         } label: {
           Text("Disabled Button")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.steadyCTA)
         .disabled(true)
       }
     }
@@ -96,14 +96,14 @@ struct CTAButtonDemo: View {
         } label: {
           Label("Pay Now", systemImage: "creditcard.fill")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.steadyCTA)
 
         Button {
           lastSelection = "Plain text"
         } label: {
           Text("Button Content")
         }
-        .buttonStyle(.cta)
+        .buttonStyle(.steadyCTA)
       }
     }
   }
