@@ -1,0 +1,41 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: iOS
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26.4.1
+        run: sudo xcode-select --switch /Applications/Xcode_26.4.1.app
+
+      - name: Install XcodeBuildMCP 2.1.0
+        run: npm install --global xcodebuildmcp@2.1.0
+
+      - name: Verify iOS package
+        run: |
+          mkdir -p .build/verification
+          ./Scripts/verify ios --profile ci --output json > .build/verification/verify-ci.json
+
+      - name: Upload verification results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-results
+          path: .build/verification
+          if-no-files-found: warn
+          retention-days: 14
+
