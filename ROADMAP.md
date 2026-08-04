@@ -49,7 +49,7 @@ evidence:
 ```yaml
 id: SU-002
 title: Normalize the v1 public API baseline
-status: ready
+status: in_progress
 priority: P0
 phase: foundation
 depends_on: [SU-001]
