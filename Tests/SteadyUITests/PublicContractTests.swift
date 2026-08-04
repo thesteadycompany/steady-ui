@@ -20,6 +20,22 @@ struct PublicContractTests {
     requireEquatableAndSendable(SpacingTokens.self)
   }
 
+  @Test("badge uses the v1 role and emphasis API")
+  @MainActor
+  func badgeUsesV1RoleAndEmphasisAPI() {
+    let role: SteadyBadgeRole = .success
+    let emphasis: SteadyBadgeEmphasis = .secondary
+
+    requireEquatableAndSendable(SteadyBadgeRole.self)
+    requireEquatableAndSendable(SteadyBadgeEmphasis.self)
+    _ = SteadyBadge(
+      "Synced",
+      role: role,
+      emphasis: emphasis,
+      size: .small
+    )
+  }
+
   private func requireEquatableAndSendable<Value: Equatable & Sendable>(
     _: Value.Type
   ) {}

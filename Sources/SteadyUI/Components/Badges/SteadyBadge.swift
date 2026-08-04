@@ -3,19 +3,19 @@ import SwiftUI
 public struct SteadyBadge: View {
   @Environment(\.theme) private var theme
   private let title: String
-  private let type: SteadyBadgeType
-  private let style: SteadyBadgeStyle
+  private let role: SteadyBadgeRole
+  private let emphasis: SteadyBadgeEmphasis
   private let size: SteadyBadgeSize
 
   public init(
     _ title: String,
-    type: SteadyBadgeType = .info,
-    style: SteadyBadgeStyle = .primary,
+    role: SteadyBadgeRole = .info,
+    emphasis: SteadyBadgeEmphasis = .primary,
     size: SteadyBadgeSize = .medium
   ) {
     self.title = title
-    self.type = type
-    self.style = style
+    self.role = role
+    self.emphasis = emphasis
     self.size = size
   }
 
@@ -29,7 +29,7 @@ public struct SteadyBadge: View {
       .padding(.vertical, verticalPadding)
       .background(backgroundColor, in: .rect(cornerRadius: cornerRadius))
       .overlay {
-        if style == .secondary {
+        if emphasis == .secondary {
           RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .stroke(borderColor)
         }
@@ -37,7 +37,7 @@ public struct SteadyBadge: View {
   }
 
   private var statusColor: StatusColor {
-    switch type {
+    switch role {
     case .info:
       theme.colors.status.info
     case .success:
@@ -104,7 +104,7 @@ public struct SteadyBadge: View {
   }
 
   private var foregroundColor: Color {
-    switch style {
+    switch emphasis {
     case .primary:
       theme.colors.text.inverse
     case .secondary:
@@ -113,7 +113,7 @@ public struct SteadyBadge: View {
   }
 
   private var backgroundColor: Color {
-    switch style {
+    switch emphasis {
     case .primary:
       statusColor.foreground
     case .secondary:
