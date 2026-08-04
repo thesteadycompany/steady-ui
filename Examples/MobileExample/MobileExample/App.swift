@@ -65,6 +65,14 @@ struct RootView: View {
         } header: {
           Text("ScrollViews")
         }
+
+        Section {
+          NavigationLink("Settings Form") {
+            SettingsFormUseCase()
+          }
+        } header: {
+          Text("Use Cases")
+        }
       }
     }
   }
