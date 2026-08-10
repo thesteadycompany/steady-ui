@@ -58,6 +58,13 @@ struct CTAButtonDemo: View {
         .buttonStyle(.steadyCTA(.secondary))
 
         Button {
+          lastSelection = "Neutral"
+        } label: {
+          Text("Neutral")
+        }
+        .buttonStyle(.steadyCTA(.neutral))
+
+        Button {
           lastSelection = "Destructive"
         } label: {
           Text("Delete")

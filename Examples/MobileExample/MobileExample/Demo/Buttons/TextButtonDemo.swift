@@ -60,6 +60,13 @@ struct TextButtonDemo: View {
         .buttonStyle(.steadyText(.secondary))
 
         Button {
+          lastSelection = "Neutral"
+        } label: {
+          Text("Neutral")
+        }
+        .buttonStyle(.steadyText(.neutral))
+
+        Button {
           lastSelection = "Destructive"
         } label: {
           Text("Delete")
@@ -86,6 +93,13 @@ struct TextButtonDemo: View {
             Text("Maybe Later")
           }
           .buttonStyle(.steadyUnderline(.secondary))
+
+          Button {
+            lastSelection = "Underline Neutral"
+          } label: {
+            Text("Neutral")
+          }
+          .buttonStyle(.steadyUnderline(.neutral))
 
           Button {
             lastSelection = "Underline Destructive"

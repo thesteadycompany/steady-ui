@@ -75,6 +75,8 @@ public struct SteadyTextButtonStyle: ButtonStyle {
       return isPressed ? theme.colors.action.primary.pressed : theme.colors.action.primary.normal
     case .secondary:
       return isPressed ? theme.colors.text.primary : theme.colors.text.secondary
+    case .neutral:
+      return isPressed ? theme.colors.action.neutral.pressed : theme.colors.action.neutral.normal
     case .destructive:
       return isPressed ? theme.colors.action.destructive.pressed : theme.colors.text.destructive
     }
