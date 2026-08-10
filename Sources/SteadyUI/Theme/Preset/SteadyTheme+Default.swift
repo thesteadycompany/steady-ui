@@ -35,7 +35,7 @@ extension ActionColors {
     neutral: .init(
       normal: .steadyAdaptive(light: 0x374151, dark: 0xE5E7EB),
       pressed: .steadyAdaptive(light: 0x4B5563, dark: 0xD1D5DB),
-      disabled: .steadyAdaptive(light: 0x1F2937, dark: 0xF3F4F6)
+      disabled: .steadyAdaptive(light: 0x9CA3AF, dark: 0x6B7280)
     ),
     destructive: .init(
       normal: .steadyAdaptive(light: 0xDC2626, dark: 0xEF4444),
