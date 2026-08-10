@@ -3,15 +3,18 @@ import SwiftUI
 public struct ActionColors: Equatable, Sendable {
   public var primary: ActionColor
   public var secondary: ActionColor
+  public var neutral: ActionColor
   public var destructive: ActionColor
 
   public init(
     primary: ActionColor,
     secondary: ActionColor,
+    neutral: ActionColor,
     destructive: ActionColor
   ) {
     self.primary = primary
     self.secondary = secondary
+    self.neutral = neutral
     self.destructive = destructive
   }
 }

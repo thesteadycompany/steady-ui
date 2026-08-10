@@ -34,6 +34,7 @@ public struct SteadyCTAButtonStyle: ButtonStyle {
     switch variant {
     case .primary: theme.colors.action.primary
     case .secondary: theme.colors.action.secondary
+    case .neutral: theme.colors.action.neutral
     case .destructive: theme.colors.action.destructive
     }
   }
@@ -47,6 +48,8 @@ public struct SteadyCTAButtonStyle: ButtonStyle {
       return theme.colors.text.inverse
     case .secondary:
       return theme.colors.text.primary
+    case .neutral:
+      return theme.colors.text.inverse
     }
   }
 }
