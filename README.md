@@ -51,14 +51,35 @@ struct AccountStatusView: View {
       )
 
       Button("Save") {}
-        .buttonStyle(.steadyCTA)
+        .buttonStyle(.steadyFilled(width: .expanded))
 
       Button("Reset") {}
-        .buttonStyle(.steadyText(.secondary))
+        .buttonStyle(.steadyPlain(tone: .neutral))
+
+      Button("Delete", role: .destructive) {}
+        .buttonStyle(.steadyOutlined)
     }
   }
 }
 ```
+
+Use `SteadyListRow` for row content while the native control keeps the action,
+navigation, or selection meaning:
+
+```swift
+Button {} label: {
+  SteadyListRow(
+    leading: { Image(systemName: "arrow.clockwise") },
+    content: { Text("Refresh account") },
+    trailing: { Image(systemName: "chevron.right") }
+  )
+}
+.buttonStyle(.steadyListRow)
+```
+
+Use `.steadyCard()` for a static card that contains independent controls. Use
+`.buttonStyle(.steadyCard)` only when the entire card has one action and no
+nested controls.
 
 ## Verify Changes
 
@@ -82,3 +103,6 @@ GitHub Actions runs the same entry point with the hosted-runner profile:
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md) for the current item, dependencies, acceptance criteria, and verification evidence. Contributors and agents must also follow [AGENTS.md](AGENTS.md).
+
+Public UI APIs follow the shared state, sizing, motion, accessibility, and
+abstraction rules in [Component Contracts](docs/component-contracts.md).

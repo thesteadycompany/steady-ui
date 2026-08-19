@@ -24,13 +24,13 @@ struct BottomScrollViewDemo: View {
           } label: {
             Label("Later", systemImage: "clock")
           }
-          .buttonStyle(.steadyCTA(.secondary))
+          .buttonStyle(.steadyOutlined(tone: .neutral, width: .expanded))
 
           Button {
           } label: {
             Label("Start", systemImage: "play.fill")
           }
-          .buttonStyle(.steadyCTA)
+          .buttonStyle(.steadyFilled(width: .expanded))
         }
         .padding(.horizontal, theme.spacing.medium)
         .padding(.bottom, theme.spacing.small)

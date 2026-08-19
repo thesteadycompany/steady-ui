@@ -12,68 +12,77 @@ struct MobileExampleApp: App {
 struct RootView: View {
   var body: some View {
     NavigationStack {
-      Form {
-        Section {
-          NavigationLink("Token") {
-            TokenDemo()
-          }
-          NavigationLink("Badge") {
-            BadgeDemo()
-          }
-
-          NavigationLink("Toggle") {
-            ToggleDemo()
-          }
+      List {
+        NavigationLink("Components") {
+          ComponentsView()
         }
 
-        Section {
-          NavigationLink("BoxTextField") {
-            BoxTextFieldDemo()
-          }
-          
-          NavigationLink("LineTextField") {
-            LineTextFieldDemo()
-          }
-        } header: {
-          Text("TextFields")
-        }
-
-        Section {
-          NavigationLink("Switch Tab") {
-            SwitchTabDemo()
-          }
-        } header: {
-          Text("Switch Tabs")
-        }
-
-        Section {
-          NavigationLink("CTA Button") {
-            CTAButtonDemo()
-          }
-
-          NavigationLink("Text Button") {
-            TextButtonDemo()
-          }
-        } header: {
-          Text("Buttons")
-        }
-
-        Section {
-          NavigationLink("Bottom ScrollView") {
-            BottomScrollViewDemo()
-          }
-        } header: {
-          Text("ScrollViews")
-        }
-
-        Section {
+        Section("Use Cases") {
           NavigationLink("Settings Form") {
             SettingsFormUseCase()
           }
-        } header: {
-          Text("Use Cases")
+
+          NavigationLink("Content Cards") {
+            ContentCardUseCase()
+          }
+        }
+      }
+      .navigationTitle("SteadyUI")
+    }
+  }
+}
+
+private struct ComponentsView: View {
+  var body: some View {
+    List {
+      Section("Foundations") {
+        NavigationLink("Token") {
+          TokenDemo()
+        }
+      }
+
+      Section("Content") {
+        NavigationLink("Badge") {
+          BadgeDemo()
+        }
+      }
+
+      Section("Selection") {
+        NavigationLink("Toggle") {
+          ToggleDemo()
+        }
+
+        NavigationLink("Switch Tab") {
+          SwitchTabDemo()
+        }
+      }
+
+      Section("Inputs") {
+        NavigationLink("Box Text Field") {
+          BoxTextFieldDemo()
+        }
+
+        NavigationLink("Line Text Field") {
+          LineTextFieldDemo()
+        }
+      }
+
+      Section("Actions") {
+        NavigationLink("Action Buttons") {
+          ActionButtonDemo()
+        }
+
+        NavigationLink("Interactive Surfaces") {
+          InteractiveSurfaceDemo()
+        }
+      }
+
+      Section("Layout") {
+        NavigationLink("Bottom Scroll View") {
+          BottomScrollViewDemo()
         }
       }
     }
+    .navigationTitle("Components")
   }
 }
