@@ -2,10 +2,10 @@
 
 ```yaml
 roadmap_version: 1
-last_updated: 2026-08-04
+last_updated: 2026-08-19
 horizon: 10-weeks
-current_phase: foundation
-current_focus: SU-003
+current_phase: inputs
+current_focus: SU-005
 owner: repository-maintainer
 ```
 
@@ -78,7 +78,7 @@ evidence:
 ```yaml
 id: SU-003
 title: Define tokens and component contracts
-status: ready
+status: done
 priority: P0
 phase: foundation
 depends_on: [SU-002]
@@ -93,30 +93,46 @@ acceptance:
   - MobileExample separates Components and Use Cases.
 verification:
   - ./Scripts/verify ios --profile minimum --output json
-evidence: []
+evidence:
+  - "2026-08-19: ./Scripts/verify ios --profile minimum --output json passed on iPhone 16 Pro with iOS 18.5."
+  - "MobileExample: xcodebuildmcp simulator build --project-path Examples/MobileExample/MobileExample.xcodeproj --scheme MobileExample --simulator-id BB71DA41-A3DA-491A-940D-37D5B31C9C0E --output json passed."
+  - "Contracts: docs/component-contracts.md defines state, size, 44-point touch target, motion, accessibility, abstraction, and interactive-surface rules."
+  - "Catalog: MobileExample root navigation separates Components from Use Cases."
+  - "Review: docs/reviews/2026-08-19-button-interactive-surfaces.md"
+  - "Files: docs/component-contracts.md, Examples/MobileExample/MobileExample/App.swift, README.md, and ROADMAP.md."
 ```
 
-### SU-004 — Stabilize actions and add checkbox
+### SU-004 — Stabilize actions and interactive surfaces
 
 ```yaml
 id: SU-004
-title: Stabilize actions and add checkbox
-status: planned
+title: Stabilize actions and interactive surfaces
+status: done
 priority: P0
 phase: actions
 depends_on: [SU-003]
-goal: Make action styles complete and add accessible binary selection.
-preferred_abstraction: ButtonStyle, ToggleStyle
-abstraction_rationale: Native styles preserve Button and Toggle action, binding, role, and accessibility semantics.
+goal: Make action styles complete and add reusable list-row and card interaction surfaces.
+preferred_abstraction: ButtonStyle, ViewModifier, top-level composition View
+abstraction_rationale: ButtonStyle preserves native action and role semantics, Card decoration applies to arbitrary content, and List Row owns a unique multi-slot content layout.
 mobile_example_use_cases:
   - Settings Form
+  - Content Card or Dashboard
 acceptance:
-  - CTA, Text, and Underline styles cover required sizes and states.
-  - Checkbox is implemented as ToggleStyle.
-  - Independent demos, Settings Form usage, and accessibility checks pass.
+  - Filled, Outlined, and Plain styles cover required tones, roles, sizes, widths, and states.
+  - List Row composes with Button, NavigationLink, and Toggle without owning interaction semantics.
+  - Static and single-action Card APIs share one visual surface contract.
+  - Independent demos, Settings Form and Content Card usage, and accessibility checks pass.
 verification:
   - ./Scripts/verify ios --profile minimum --output json
-evidence: []
+evidence:
+  - "2026-08-19: ./Scripts/verify ios --profile minimum --output json passed on iPhone 16 Pro with iOS 18.5."
+  - "Tests: PublicContractTests 5 passed; ThemeEnvironmentTests 2 passed; 7 total tests passed."
+  - "MobileExample: xcodebuildmcp simulator build --project-path Examples/MobileExample/MobileExample.xcodeproj --scheme MobileExample --simulator-id BB71DA41-A3DA-491A-940D-37D5B31C9C0E --output json passed."
+  - "API inventory: zero executable-source matches for SteadyButtonVariant, SteadyCTAButtonStyle, SteadyTextButtonStyle, SteadyUnderlineTextButtonStyle, SteadyTextButtonSize, steadyCTA, steadyText, or steadyUnderline."
+  - "Accessibility: UI automation verified 44-point action targets, Button/NavigationLink/Toggle semantics, disabled state, static Card child actions, and one-element interactive Card semantics."
+  - "Visual matrix: light, dark, RTL, and accessibility-extra-extra-extra-large layouts inspected on iPhone 16 Pro iOS 18.5; Reduce Motion removes scale animation in source contract."
+  - "Files: Sources/SteadyUI Button, ListRows, and Cards APIs; Tests/SteadyUITests/PublicContractTests.swift; MobileExample action/surface demos and Settings/Content Card use cases; README.md; docs/component-contracts.md."
+  - "Review: docs/reviews/2026-08-19-button-interactive-surfaces.md"
 ```
 
 ### SU-005 — Complete inputs and selection
@@ -124,7 +140,7 @@ evidence: []
 ```yaml
 id: SU-005
 title: Complete inputs and selection
-status: planned
+status: ready
 priority: P0
 phase: inputs
 depends_on: [SU-004]
@@ -135,6 +151,7 @@ mobile_example_use_cases:
   - Authentication Form
   - Settings Form
 acceptance:
+  - Checkbox is implemented as ToggleStyle.
   - Box and Line styles work with TextField and SecureField.
   - Radio uses ToggleStyle and its group is a top-level composition View.
   - SteadyToggle remains a custom View and passes disabled, VoiceOver, Dynamic Type, and Reduce Motion checks.
@@ -155,12 +172,12 @@ phase: content
 depends_on: [SU-005]
 goal: Provide low-level content primitives for common screens.
 preferred_abstraction: ViewModifier, top-level custom View
-abstraction_rationale: Divider and Card decorate arbitrary content, while Avatar and Badge own unique content structure.
+abstraction_rationale: Divider decorates arbitrary content, while Avatar and Badge own unique content structure.
 mobile_example_use_cases:
   - Content Card or Dashboard
 acceptance:
   - Icon usage rules preserve native Image.
-  - Divider and Card are modifiers.
+  - Divider is a modifier.
   - Avatar is a top-level View and Badge satisfies the public UI completion definition.
 verification:
   - ./Scripts/verify ios --profile minimum --output json

@@ -96,7 +96,7 @@ SteadyUI를 현재의 초기 컴포넌트 모음에서, 사내 제품이 안정�
 
 - 공개 이름은 Swift API Design Guidelines의 역할 중심, 사용 지점 중심 원칙을 따른다.
 - 렌더링 가능한 공개 컴포넌트 타입은 모듈 최상위에 선언한다. `SteadyUI.Components.Checkbox`, `Component.Checkbox`, `Form.Field`처럼 네임스페이스 또는 다른 타입 안에 중첩하지 않는다.
-- SwiftUI와 소비자 앱의 최상위 타입 충돌을 피하기 위해 라이브러리가 소유한 공개 UI 컴포넌트, Style, 컴포넌트 전용 configuration 타입에 `Steady` 접두어를 사용한다. 예를 들어 `SteadyCheckbox`, `SteadyBanner`, `SteadyCTAButtonStyle`로 명명한다.
+- SwiftUI와 소비자 앱의 최상위 타입 충돌을 피하기 위해 라이브러리가 소유한 공개 UI 컴포넌트, Style, 컴포넌트 전용 configuration 타입에 `Steady` 접두어를 사용한다. 예를 들어 `SteadyCheckbox`, `SteadyBanner`, `SteadyFilledButtonStyle`로 명명한다.
 - SwiftUI의 네이티브 `Button`, `Toggle`, `TextField`, `ProgressView`는 그대로 사용하고 SteadyUI가 제공하는 Style 또는 modifier에만 `Steady` 접두어를 붙인다.
 - 타입은 명사 또는 역할 이름, 메서드와 인수 레이블은 호출부가 문장처럼 읽히는 이름을 사용한다.
 - `Type`, `Style`, `Size`, `State`, `Variant`처럼 역할이 다른 공개 개념을 이름으로 구분한다. 철자 오류와 축약어 혼용을 허용하지 않는다.
@@ -111,11 +111,15 @@ SteadyUI를 현재의 초기 컴포넌트 모음에서, 사내 제품이 안정�
 | `SteadyBadgeSize` | `SteadyBadgeSize` | 변경 없음 |
 | `SteadyBadgeStyle` | `SteadyBadgeEmphasis` | 타입명과 `emphasis:` 인수 레이블로 변경 |
 | `SteadyBadgeType` | `SteadyBadgeRole` | 타입명과 `role:` 인수 레이블로 변경 |
-| `SteadyCTAButonStyle` | `SteadyCTAButtonStyle` | 철자를 수정하고 `.cta`를 `.steadyCTA`로 변경 |
-| `SteadyButtonType` | `SteadyButtonVariant` | 타입명과 `variant:` 인수 레이블로 변경 |
-| `SteadyTextButtonSize` | `SteadyTextButtonSize` | 변경 없음 |
-| `SteadyTextButtonStyle` | `SteadyTextButtonStyle` | `.text`를 `.steadyText`로 변경 |
-| `SteadyUnderlineTextButtonStyle` | `SteadyUnderlineTextButtonStyle` | `.underline`을 `.steadyUnderline`으로 변경 |
+| `SteadyCTAButtonStyle` | `SteadyFilledButtonStyle` | `.steadyCTA`를 `.steadyFilled`로 변경하고 width를 독립 축으로 지정 |
+| `SteadyTextButtonStyle` | `SteadyPlainButtonStyle` | `.steadyText`를 `.steadyPlain`으로 변경 |
+| `SteadyUnderlineTextButtonStyle` | 제거 | 액션은 `.steadyPlain`, 이동은 네이티브 `NavigationLink` 또는 `Link` 사용 |
+| `SteadyButtonVariant` | `SteadyButtonTone`, `ButtonRole` | 색상 tone과 destructive/cancel 의미를 분리 |
+| `SteadyTextButtonSize` | `SteadyButtonSize` | 세 버튼 외형이 공통 크기 축 사용 |
+| 없음 | `SteadyOutlinedButtonStyle` | 중간 강조도 액션에 `.steadyOutlined` 사용 |
+| 없음 | `SteadyButtonWidth` | `fitted`와 `expanded`를 중요도와 독립적으로 지정 |
+| 없음 | `SteadyListRow` | 네이티브 Button, NavigationLink, Toggle의 label로 조합 |
+| 없음 | `SteadyCardModifier`, `SteadyCardButtonStyle` | 복수 액션 정적 Card와 단일 타깃 Card를 분리 |
 | `SteadyBottomScrollView` | `SteadyBottomScrollView` | 변경 없음 |
 | `SteadySwitchTabItem` | `SteadySwitchTabItem` | 변경 없음 |
 | `SteadySwitchTab` | `SteadySwitchTab` | 변경 없음 |
@@ -128,7 +132,7 @@ SteadyUI를 현재의 초기 컴포넌트 모음에서, 사내 제품이 안정�
 2. Sources 내부 참조와 static Style factory를 새 이름으로 전환한다.
 3. MobileExample의 독립 데모와 유즈케이스를 새 호출부로 전환한다.
 4. iOS 전체 테스트와 API 인벤토리 검사를 실행한다.
-5. `SteadyBadgeStyle`, `SteadyBadgeType`, `SteadyCTAButonStyle`, `SteadyButtonType`이 남아 있지 않고 각각의 v1.0 대응 타입이 존재하는지 확인한다.
+5. 제거된 Badge 및 Button 이름과 factory가 실행 가능한 소스에 남아 있지 않고 각각의 v1.0 대응 타입이 존재하는지 확인한다.
 
 `SteadyToggle`은 이름과 API 형태를 유지한다. track, thumb, press animation, Reduce Motion을 직접 제어해야 하며 SwiftUI `Toggle`과 `ToggleStyle`만으로는 SteadyUI의 외형과 상호작용 계약을 충분히 유지하기 어렵기 때문이다.
 
@@ -144,17 +148,19 @@ SteadyUI를 현재의 초기 컴포넌트 모음에서, 사내 제품이 안정�
 
 | 요구사항 | 우선 추상화 | 기준 |
 | --- | --- | --- |
-| CTA, text, underline 버튼 | `ButtonStyle` | 네이티브 `Button`의 action, role, accessibility 의미를 보존한다. |
+| Filled, outlined, plain 버튼 | `ButtonStyle` | 네이티브 `Button`의 action, role, accessibility 의미를 보존한다. |
+| List Row | 최상위 `SteadyListRow` View | leading, content, supporting, trailing의 고유한 행 구조만 소유하고 동작은 네이티브 컨트롤에 맡긴다. |
 | Checkbox, Radio Button | `ToggleStyle` | 네이티브 `Toggle`의 binding과 접근성 의미를 보존한다. |
 | SteadyUI 브랜드 토글 | 최상위 `SteadyToggle` View | track, thumb, animation을 직접 제어해야 하므로 Style 우선 규칙의 승인된 예외다. |
 | TextField와 SecureField 외형 | `TextFieldStyle` | 네이티브 입력 View의 포커스와 입력 동작을 보존한다. Label, helper, error처럼 Style이 표현할 수 없는 구조만 별도 최상위 View로 조합한다. |
 | 선택 가능한 Chip | `ToggleStyle` 또는 `ButtonStyle` | 지속되는 선택 상태면 Toggle, 일회성 action이면 Button을 사용한다. |
 | Progress | `ProgressViewStyle` | determinate/indeterminate 의미를 네이티브 `ProgressView`에 유지한다. |
-| Skeleton, Card 장식 | `ViewModifier` | 임의의 콘텐츠에 적용할 수 있고 별도 콘텐츠 구조가 필요하지 않다. |
+| Skeleton, 정적 Card 장식 | `ViewModifier` | 임의의 콘텐츠에 적용할 수 있고 별도 콘텐츠 구조가 필요하지 않다. |
+| 단일 타깃 Card | `ButtonStyle` | 네이티브 action/navigation 의미를 유지하면서 Card 전체의 상태를 표현한다. |
 | Badge, Avatar, Banner, Empty State | 최상위 커스텀 `View` | 자체 콘텐츠 구조와 의미가 있어 네이티브 Style만으로 표현되지 않는다. |
 | Switch Tab, BottomScrollView | 최상위 커스텀 `View` | 여러 자식의 선택 또는 스크롤 레이아웃을 조정한다. |
 
-Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의 static member lookup을 사용해 `.buttonStyle(.steadyCTA(.primary))`, `.toggleStyle(.steadyCheckbox)`처럼 읽히게 한다. 공개 factory는 `.steadyCTA`, `.steadyText`, `.steadyUnderline`, `.steadyCheckbox`, `.steadyRadio`, `.steadyBox`, `.steadyLine`처럼 `steady` 접두어를 사용한다.
+Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의 static member lookup을 사용해 `.buttonStyle(.steadyFilled(width: .expanded))`, `.toggleStyle(.steadyCheckbox)`처럼 읽히게 한다. 공개 factory는 `.steadyFilled`, `.steadyOutlined`, `.steadyPlain`, `.steadyListRow`, `.steadyCard`, `.steadyCheckbox`, `.steadyRadio`, `.steadyBox`, `.steadyLine`처럼 `steady` 접두어를 사용한다.
 
 `SteadyToggle`의 `abstraction_rationale`은 “SwiftUI 기본 Toggle의 외형과 애니메이션 커스터마이징 제약 때문에 독립 컴포넌트가 필요하다”로 고정한다. AI는 이 컴포넌트를 `ToggleStyle`로 전환하거나 네이티브 `Toggle`로 대체하지 않는다.
 
@@ -185,7 +191,7 @@ Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의
 ### v1.0 필수 범주
 
 - **Foundation:** Theme 적용 API, 색상·타이포그래피·간격·반경, 공통 모션
-- **Actions:** `SteadyCTAButtonStyle`, `SteadyTextButtonStyle`, `SteadyUnderlineTextButtonStyle`의 상태와 크기 일관성
+- **Actions:** Filled, Outlined, Plain ButtonStyle과 List Row, 정적/단일 타깃 Card의 상태 및 조합 일관성
 - **Inputs:** `SteadyBoxTextFieldStyle`, `SteadyLineTextFieldStyle`, `SteadyCheckboxToggleStyle`, `SteadyRadioToggleStyle`
 - **Selection:** SteadyToggle, Switch Tab, Chip
 - **Content:** Icon 사용 규칙, Divider, Card, Badge, Avatar
@@ -200,7 +206,7 @@ Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의
 - Pagination
 - Date/Time 입력
 - 고급 Sheet/Dialog 추상화
-- 복합 List Row와 Form Section
+- Form Section
 
 ## 7. 10주 로드맵
 
@@ -239,19 +245,20 @@ Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의
 
 ### 3주차 — 액션과 단일 선택
 
-**목표:** 기존 액션 계층을 안정화하고 Checkbox를 추가한다.
+**목표:** 액션 계층과 List Row, Card 상호작용 표면을 안정화한다.
 
-- CTA, Text, Underline `ButtonStyle`의 크기와 상태 정합성 확보
+- Filled, Outlined, Plain `ButtonStyle`의 tone, role, 크기, width, 상태 정합성 확보
 - 로딩 상태, 최소 터치 영역, Reduce Motion 반영
-- Checkbox를 `ToggleStyle`로 구현
-- 각 변형의 문서, 독립 데모, Settings Form 유즈케이스, 상태 검증 추가
+- `SteadyListRow`, 정적 Card modifier, 단일 타깃 Card `ButtonStyle` 구현
+- 각 변형의 문서, 독립 데모, Settings Form과 Content Card 유즈케이스, 상태 검증 추가
 
-**종료 게이트:** 액션 컴포넌트와 Checkbox가 모든 필수 상태 및 접근성 매트릭스를 통과한다.
+**종료 게이트:** 액션과 interactive surface API가 모든 필수 상태 및 접근성 매트릭스를 통과한다.
 
 ### 4주차 — 입력과 선택 완성
 
 **목표:** 폼 작성에 필요한 최소 입력 집합을 완성한다.
 
+- Checkbox를 `ToggleStyle`로 구현
 - 기존 Box/Line TextField View를 Steady `TextFieldStyle`로 전환해 네이티브 `TextField`와 `SecureField`에 동일하게 적용
 - label, helper, error, disabled 구조는 Style로 표현할 수 없는 부분만 최상위 조합 View로 제공
 - Radio Button을 `ToggleStyle`로, Radio Group을 최상위 조합 View로 구현
@@ -269,7 +276,6 @@ Style은 구체 타입도 최상위에 선언하되, 호출부에서는 Swift의
 
 - 네이티브 `Image`를 보존하는 Icon 사용 규칙과 API
 - Divider modifier
-- Card modifier
 - 최상위 Avatar View
 - 기존 Badge API와 시각 상태 검증
 - Content Card 또는 Dashboard 유즈케이스 추가

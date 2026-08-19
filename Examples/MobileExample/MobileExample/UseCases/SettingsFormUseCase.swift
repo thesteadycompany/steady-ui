@@ -2,47 +2,42 @@ import SteadyUI
 import SwiftUI
 
 struct SettingsFormUseCase: View {
-  @Environment(\.theme) private var theme
   @State private var notificationsEnabled = true
   @State private var isSaved = false
 
   var body: some View {
     Form {
       Section("Account") {
-        HStack {
-          VStack(alignment: .leading, spacing: theme.spacing.xSmall) {
-            Text("Workspace")
-              .font(theme.fonts.label.large)
-            Text("Steady Team")
-              .font(theme.fonts.body.medium)
-              .foregroundStyle(theme.colors.text.secondary)
+        SteadyListRow(
+          leading: { Image(systemName: "person.2") },
+          content: { Text("Workspace") },
+          supporting: { Text("Steady Team") },
+          trailing: {
+            SteadyBadge(
+              isSaved ? "Saved" : "Active",
+              role: isSaved ? .success : .info,
+              emphasis: .secondary
+            )
           }
-
-          Spacer()
-
-          SteadyBadge(
-            isSaved ? "Saved" : "Active",
-            role: isSaved ? .success : .info,
-            emphasis: .secondary
-          )
-        }
+        )
 
         Button("Reset preferences", action: resetPreferencesButtonTapped)
-          .buttonStyle(.steadyText(.secondary))
+          .buttonStyle(.steadyPlain(tone: .neutral))
       }
 
       Section("Notifications") {
-        HStack {
-          Text("Product updates")
-          Spacer()
-          SteadyToggle(isOn: $notificationsEnabled)
-            .accessibilityLabel("Product updates")
-        }
+        SteadyListRow(
+          content: { Text("Product updates") },
+          trailing: {
+            SteadyToggle(isOn: $notificationsEnabled)
+              .accessibilityLabel("Product updates")
+          }
+        )
       }
 
       Section {
         Button("Save changes", action: saveChangesButtonTapped)
-          .buttonStyle(.steadyCTA)
+          .buttonStyle(.steadyFilled(width: .expanded))
       }
     }
     .navigationTitle("Settings Form")
