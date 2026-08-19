@@ -32,6 +32,7 @@ struct RootView: View {
   }
 }
 
+/// Coordinates categorized component navigation, which a Style or ViewModifier cannot provide.
 private struct ComponentsView: View {
   var body: some View {
     List {

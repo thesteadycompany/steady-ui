@@ -1,6 +1,7 @@
 import SteadyUI
 import SwiftUI
 
+/// Coordinates the comparison layout and action state, which a Style or ViewModifier cannot provide.
 struct ActionButtonDemo: View {
   @Environment(\.theme) private var theme
   @State private var lastSelection = "None"

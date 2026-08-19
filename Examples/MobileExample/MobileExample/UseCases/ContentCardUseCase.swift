@@ -1,6 +1,7 @@
 import SteadyUI
 import SwiftUI
 
+/// Coordinates the card workflow and status state, which a Style or ViewModifier cannot provide.
 struct ContentCardUseCase: View {
   @Environment(\.theme) private var theme
   @State private var status = "Ready"

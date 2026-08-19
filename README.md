@@ -71,6 +71,7 @@ Button {} label: {
   SteadyListRow(
     leading: { Image(systemName: "arrow.clockwise") },
     content: { Text("Refresh account") },
+    supporting: { Text("Sync the latest account data") },
     trailing: { Image(systemName: "chevron.right") }
   )
 }

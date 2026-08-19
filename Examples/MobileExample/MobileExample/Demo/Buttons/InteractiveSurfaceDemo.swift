@@ -1,6 +1,7 @@
 import SteadyUI
 import SwiftUI
 
+/// Coordinates semantic interaction examples and state, which a Style or ViewModifier cannot provide.
 struct InteractiveSurfaceDemo: View {
   @State private var notificationsEnabled = true
   @State private var lastAction = "None"
