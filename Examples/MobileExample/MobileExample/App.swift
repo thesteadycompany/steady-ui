@@ -53,6 +53,10 @@ private struct ComponentsView: View {
           ToggleDemo()
         }
 
+        NavigationLink("Tab") {
+          TabDemo()
+        }
+
         NavigationLink("Switch Tab") {
           SwitchTabDemo()
         }
